@@ -81,7 +81,7 @@ function update_scoop() {
         }
     }
 
-    ensure_scoop_in_path
+    ensure_scoop_in_path $false
     shim "$currentdir\bin\scoop.ps1" $false
 
     @(buckets) | % {
