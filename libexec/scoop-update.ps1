@@ -76,7 +76,7 @@ function update_scoop() {
         }
         else {
             write-host "scoop code was changed, restarting update..."
-            scoop update -__updateRestart $($update_restart + 1) $args_initial
+            & "$psscriptroot\..\bin\scoop.ps1" update -__updateRestart $($update_restart + 1) $args_initial
             exit $lastExitCode
         }
     }
