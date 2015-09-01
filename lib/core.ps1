@@ -145,7 +145,7 @@ function shim($path, $global, $name, $arg) {
         # make ps1 accessible from cmd.exe
         $shim_cmd = "$(strip_ext($shim)).cmd"
         # default code; NOTE: only scoop knows about and manipulates shims so, by default, no special care is needed for other apps
-        $code = "@powershell -noprofile -ex unrestricted `"& '$(resolve-path $path)' %*;exit `$lastexitcode`""
+        $code = "@powershell -noprofile -ex unrestricted `"& '$(resolve-path $path)' $arg %* ; exit `$lastexitcode`""
         if ($name -eq 'scoop') {
             # shimming self; specialized code is required
             $code = shim_scoop_cmd_code $shim_cmd $path $arg
