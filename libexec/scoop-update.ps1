@@ -37,6 +37,8 @@ function update_scoop() {
     $git = try { gcm git -ea stop } catch { $null }
     if(!$git) { abort "scoop uses git to update itself. run 'scoop install git'." }
 
+    $update_commit_target = 'FETCH_HEAD'  # or, for a complete reset, use "origin/HEAD"
+
     "updating scoop..."
     $currentdir = fullpath $(versiondir 'scoop' 'current')
     $hash_original = ""
@@ -63,7 +65,9 @@ function update_scoop() {
     else {
         pushd $currentdir
         $hash_original = git describe --all --long
-        git pull -q
+        git fetch --quiet
+        git reset --quiet --hard $update_commit_target
+        git clean -fd
         popd
     }
     pushd $currentdir
@@ -87,7 +91,9 @@ function update_scoop() {
     @(buckets) | % {
         "updating $_ bucket..."
         pushd (bucketdir $_)
-        git pull -q
+        git fetch --quiet
+        git reset --quiet --hard $update_commit_target
+        git clean -fd
         popd
     }
     success 'scoop was updated successfully!'
