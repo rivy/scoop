@@ -57,8 +57,8 @@ describe 'Project code' {
 describe 'Project style constraints' {
 
     $files = @(
-        # gather all files except '*.exe', '*.zip', or any .git repository files
-        Get-ChildItem $repo_dir -file -recurse -force | ? { $_.fullname -notmatch '(.git(|\\.*)|.exe|.zip)$' }
+        # gather all files except '*.exe' and '*.zip', ignoring third-party tools and any .git repository files
+        Get-ChildItem $repo_dir -file -recurse -force | ? { $_.fullname -notmatch '(.exe|.zip|tptools(|\\.*)|.git(|\\.*))$' }
     )
 
     it 'files do not contain leading utf-8 BOM' {
