@@ -4,6 +4,7 @@ $repo_files = @( Get-ChildItem $repo_dir -file -recurse -force )
 
 $project_file_exclusions = @(
     $([regex]::Escape($repo_dir.fullname)+'\\.git\\.*$')
+  , $([regex]::Escape($repo_dir.fullname)+'\\tools\\.*$')
 )
 
 describe 'Project code' {
@@ -74,7 +75,7 @@ describe 'Project code' {
 describe 'Style constraints for non-binary project files' {
 
     $files = @(
-        # gather all files except '*.exe', '*.zip', or any .git repository files
+        # gather all project files except '*.exe', '*.zip'
         $repo_files |
             where-object { $_.fullname -inotmatch $($project_file_exclusions -join '|') } |
             where-object { $_.fullname -inotmatch '(.exe|.zip)$' }
