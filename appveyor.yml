@@ -6,7 +6,7 @@ branches:
 
 init:
   - ps: (get-psprovider 'FileSystem').Home = $(pwd)
-  - ps: choco install -y pester
+  - ps: choco install -y pester $env:APPVEYOR_CHOCO_PESTER_OPTIONS
 
 build: off
 
