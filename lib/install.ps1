@@ -60,7 +60,7 @@ function ensure_architecture($architecture_opt) {
 }
 
 function cache_path($app, $version, $url) {
-    "$cachedir\$app#$version#$($url -replace '[^\w\.\-]+', '_')"
+    "$(cachedir)\$app#$version#$($url -replace '[^\w\.\-]+', '_')"
 }
 
 function appname_from_url($url) {
@@ -99,7 +99,7 @@ function dl_with_cache($app, $version, $url, $to, $cookies, $use_cache = $true) 
     if(!$use_cache) { warn "cache is being ignored" }
 
     if(!(test-path $cached) -or !$use_cache) {
-        $null = ensure $cachedir
+        $null = ensure $(cachedir)
         write-host "downloading $url..." -nonewline
         dl_progress $url "$cached.download" $cookies
         move-item "$cached.download" $cached -force
@@ -419,7 +419,7 @@ function msi_installed($code) {
     $name = $key.getvalue('displayname')
     $version = $key.getvalue('displayversion')
     $classkey = "IdentifyingNumber=`"$code`",Name=`"$name`",Version=`"$version`""
-    try { $wmi = [wmi]"Win32_Product.$classkey"; $true } catch { $false }
+    try { $null = [wmi]"Win32_Product.$classkey"; $true } catch { $false }
 }
 
 function install_prog($fname, $dir, $installer) {

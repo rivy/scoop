@@ -1,6 +1,5 @@
 $scoopdir = $env:SCOOP, "~\appdata\local\scoop" | select-object -first 1
 $globaldir = $env:SCOOP_GLOBAL, "$($env:programdata.tolower())\scoop" | select-object -first 1
-$cachedir = "$scoopdir\cache" # always local
 
 $CMDenvpipe = $env:SCOOP__CMDenvpipe
 
@@ -22,6 +21,7 @@ function warn($msg) { write-host $msg -f darkyellow; }
 function success($msg) { write-host $msg -f darkgreen }
 
 # dirs
+function cachedir() { return "$scoopdir\cache" } # always local
 function basedir($global) { if($global) { return $globaldir } $scoopdir }
 function appsdir($global) { "$(basedir $global)\apps" }
 function shimdir($global) { "$(basedir $global)\shims" }
@@ -135,10 +135,10 @@ function shim($path, $global, $name, $arg) {
 
     $shim = "$abs_shimdir\$($name.tolower()).ps1"
 
-    # convert to relative path
-    push-location $abs_shimdir
-    $relative_path = resolve-path -relative $path
-    pop-location
+    # # convert to relative path
+    # push-location $abs_shimdir
+    # $relative_path = resolve-path -relative $path
+    # pop-location
 
     write-output '# ensure $HOME is set for MSYS programs' | out-file $shim -encoding oem
     write-output "if(!`$env:home) { `$env:home = `"`$home\`" }" | out-file $shim -encoding oem -append
