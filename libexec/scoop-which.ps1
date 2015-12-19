@@ -9,7 +9,7 @@ reset_aliases
 
 if(!$command) { 'ERROR: <command> missing'; my_usage; exit 1 }
 
-try { $gcm = get-command "$command.ps1" -ea stop } catch { }
+$gcm = try { get-command "$command.ps1" -ea stop } catch { $null }
 if(!$gcm) { [console]::error.writeline("'$command' not found"); exit 3 }
 
 $path = "$($gcm.path)"
