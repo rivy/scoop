@@ -13,7 +13,7 @@ function test($desc, $assertions) {
     try {
         $assertions.invoke()
     } catch {
-        script:fail $_.exception.innerexception.message
+        script_fail $_.exception.innerexception.message
     }
     $script:test = $null
 }
@@ -44,7 +44,7 @@ function test_results {
     write-host $res -f $col
 }
 
-function script:fail($msg) {
+function script_fail($msg) {
     $script:failed++
     $invoked = (get-variable -scope 1 myinvocation).value
 
@@ -58,7 +58,7 @@ function script:fail($msg) {
     write-host (($invoked.positionmessage -split "`r`n")[1..2] -join "`r`n")
 }
 
-function script:fmt($var) {
+function script_fmt($var) {
     if($var -eq $null) { return "`$null" }
     if($var -is [string]) { return "'$var'" }
     return $var
