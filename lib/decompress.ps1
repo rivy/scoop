@@ -20,5 +20,5 @@ function extract_7zip($path, $to, $recurse) {
         if(test-path "$to\$tar") { extract_7zip "$to\$tar" $to $true }
     }
 
-    if($recurse) { rm $path } # clean up intermediate files
+    if($recurse) { remove-item $path } # clean up intermediate files
 }

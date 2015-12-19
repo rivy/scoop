@@ -6,8 +6,8 @@ $erroractionpreference='stop' # quit if anything goes wrong
 
 # get core functions
 $core_url = 'https://raw.github.com/lukesampson/scoop/master/lib/core.ps1'
-echo 'initializing...'
-iex (new-object net.webclient).downloadstring($core_url)
+write-output 'initializing...'
+invoke-expression (new-object net.webclient).downloadstring($core_url)
 
 # prep
 if(installed 'scoop') {
@@ -20,19 +20,19 @@ $dir = ensure (versiondir 'scoop' 'current')
 # download scoop zip
 $zipurl = 'https://github.com/lukesampson/scoop/archive/master.zip'
 $zipfile = "$dir\scoop.zip"
-echo 'downloading...'
+write-output 'downloading...'
 dl $zipurl $zipfile
 
 'extracting...'
 unzip $zipfile "$dir\_scoop_extract"
-cp "$dir\_scoop_extract\scoop-master\*" $dir -r -force
-rm "$dir\_scoop_extract" -r -force
-rm $zipfile
+copy-item "$dir\_scoop_extract\scoop-master\*" $dir -r -force
+remove-item "$dir\_scoop_extract" -r -force
+remove-item $zipfile
 
-echo 'creating shim...'
+write-output 'creating shim...'
 shim "$dir\bin\scoop.ps1" $false
 
 ensure_robocopy_in_path
 ensure_scoop_in_path
 success 'scoop was installed successfully!'
-echo "type 'scoop help' for instructions"
+write-output "type 'scoop help' for instructions"

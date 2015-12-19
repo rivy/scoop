@@ -9,8 +9,8 @@
 
 reset_aliases
 
-$local = installed_apps $false | % { @{ name = $_; global = $false } }
-$global = installed_apps $true | % { @{ name = $_; global = $true } }
+$local = installed_apps $false | foreach-object { @{ name = $_; global = $false } }
+$global = installed_apps $true | foreach-object { @{ name = $_; global = $true } }
 
 $apps = @($local) + @($global)
 $count = 0
@@ -19,7 +19,7 @@ $count = 0
 # echo "{["
 
 if($apps) {
-    $apps | sort { $_.name } | ? { !$query -or ($_.name -match $query) } | % {
+    $apps | sort-object { $_.name } | where-object { !$query -or ($_.name -match $query) } | foreach-object {
         $app = $_.name
         $global = $_.global
         $ver = current_version $app $global
