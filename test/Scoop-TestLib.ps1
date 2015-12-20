@@ -59,7 +59,7 @@ function script_fail($msg) {
 }
 
 function script_fmt($var) {
-    if($var -eq $null) { return "`$null" }
+    if($null -eq $var) { return "`$null" }
     if($var -is [string]) { return "'$var'" }
     return $var
 }

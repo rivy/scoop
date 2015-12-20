@@ -38,7 +38,7 @@ function installed_manifest($app, $version, $global) {
 }
 
 function save_install_info($info, $dir) {
-    $nulls = $info.keys | where-object { $info[$_] -eq $null }
+    $nulls = $info.keys | where-object { $null -eq $info[$_] }
     $nulls | foreach-object { $info.remove($_) } # strip null-valued
 
     $info | convertto-json | out-file "$dir\install.json"

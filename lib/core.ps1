@@ -31,7 +31,7 @@ function versiondir($app, $version, $global) { "$(appdir $app $global)\$version"
 # apps
 function sanitary_path($path) { return [regex]::replace($path, "[/\\?:*<>|]", "") }
 function installed($app, $global=$null) {
-    if($global -eq $null) { return (installed $app $true) -or (installed $app $false) }
+    if($null -eq $global) { return (installed $app $true) -or (installed $app $false) }
     return test-path (appdir $app $global)
 }
 function installed_apps($global) {
@@ -68,7 +68,7 @@ function dl($url,$to) {
 function env { param($name,$value,$targetEnvironment)
     if ( $PSBoundParameters.ContainsKey('targetEnvironment') ) {
         # $targetEnvironment is expected to be $null, [bool], [string], or [System.EnvironmentVariableTarget]
-        if ($targetEnvironment -eq $null) { $targetEnvironment = [System.EnvironmentVariableTarget]::Process }
+        if ($null -eq $targetEnvironment) { $targetEnvironment = [System.EnvironmentVariableTarget]::Process }
         elseif ($targetEnvironment -is [bool]) {
             # from initial usage pattern
             if ($targetEnvironment) { $targetEnvironment = [System.EnvironmentVariableTarget]::Machine }
@@ -86,7 +86,7 @@ function env { param($name,$value,$targetEnvironment)
 
     if($PSBoundParameters.ContainsKey('value')) {
         [environment]::setEnvironmentVariable($name,$value,$targetEnvironment)
-        if (($targetEnvironment -eq [System.EnvironmentVariableTarget]::Process) -and ($CMDenvpipe -ne $null)) {
+        if (($targetEnvironment -eq [System.EnvironmentVariableTarget]::Process) -and ($null -ne $CMDenvpipe)) {
             "set " + ( CMD_SET_encode_arg("$name=$value") ) | out-file $CMDenvpipe -encoding OEM -append
         }
     }
