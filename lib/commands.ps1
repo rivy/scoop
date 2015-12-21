@@ -21,7 +21,7 @@ function command_path($cmd) {
         $shim_path = "$scoopdir\shims\scoop-$cmd.ps1"
         $line = ((get-content $shim_path) | where-object { $_.startswith('$path') })
         if($line) {
-            invoke-expression -command "$line"
+            . $( [ScriptBlock]::Create($line) ) ## aka: invoke-expression -command "$line"
             $cmd_path = $path
         }
         else { $cmd_path = $shim_path }

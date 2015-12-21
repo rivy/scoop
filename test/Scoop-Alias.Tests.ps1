@@ -16,7 +16,7 @@ describe "add_alias" {
       $alias_file | should not exist
 
       add_alias "rm" '"hello, world!"'
-      invoke-expression $alias_file | should be "hello, world!"
+      & $alias_file | should be "hello, world!" ## aka: invoke-expression $alias_file | should be "hello, world!"
     }
   }
 

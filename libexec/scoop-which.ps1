@@ -18,8 +18,9 @@ $globalshims = fullpath (shimdir $true) # don't resolve: may not exist
 
 if($path -like "$usershims*" -or $path -like "$globalshims*") {
     $shimtext = get-content $path
-    $exepath = ($shimtext | where-object { $_.startswith('$path') }).split(' ') `
-        | select-object -Last 1 | invoke-expression
+    # $exepath = ($shimtext | where-object { $_.startswith('$path') }).split(' ') `
+    #     | select-object -Last 1 | invoke-expression
+    $exepath = & $([ScriptBlock]::Create( $(($shimtext | where-object { $_.startswith('$path') }).split(' ') | select-object -Last 1) ))
 
     if (![system.io.path]::ispathrooted($exepath)) {
         $exepath = resolve-path (join-path (split-path $path) $exepath)

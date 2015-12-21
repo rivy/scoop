@@ -609,14 +609,14 @@ function env_rm($manifest, $global) {
 function pre_install($manifest) {
     $manifest.pre_install | where-object { $_ } | foreach-object {
         write-output "running pre-install script..."
-        invoke-expression $_
+        & $( [ScriptBlock]::Create($_) ) ## aka: invoke-expression $_
     }
 }
 
 function post_install($manifest) {
     $manifest.post_install | where-object { $_ } | foreach-object {
         write-output "running post-install script..."
-        invoke-expression $_
+        & $( [ScriptBlock]::Create($_) ) ## aka: invoke-expression $_
     }
 }
 

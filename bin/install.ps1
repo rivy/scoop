@@ -7,7 +7,7 @@ $erroractionpreference='stop' # quit if anything goes wrong
 # get core functions
 $core_url = 'https://raw.github.com/lukesampson/scoop/master/lib/core.ps1'
 write-output 'initializing...'
-invoke-expression (new-object net.webclient).downloadstring($core_url)
+. $( [ScriptBlock]::Create((new-object net.webclient).downloadstring($core_url)) ) ## aka: invoke-expression (new-object net.webclient).downloadstring($core_url)
 
 # prep
 if(installed 'scoop') {
