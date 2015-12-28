@@ -16,9 +16,77 @@ function is_admin {
 }
 
 # messages
-function abort($msg) { write-host $msg -f darkred; exit 1 }
-function warn($msg) { write-host $msg -f darkyellow; }
-function success($msg) { write-host $msg -f darkgreen }
+$color = "always"
+function colorize($msg, $color) {
+    ## Win 10.0.10586 added an ANSI driver to the CMD/PowerShell console
+    ## for earlier Windows versions drop back to modifying $host.ui.RawUI.ForegroundColor for unredirected output
+    ## ... will have to refactor as write-colorized() since the write-output/write-error, etc must be done between $host set and restores
+    $esc = [char]27
+    $colors_fg = @{
+        "black"="30"; "darkred"="31"; "darkgreen"="32"; "darkyellow"="33"; "darkblue"="34"; "darkmagenta"="35"; "darkcyan"="36"; "gray"="37"
+        "darkgray"="90"; "red"="91"; "green"="92"; "yellow"="93"; "blue"="94"; "magenta"="95"; "cyan"="96"; "white"="97"
+        }
+    $stdout_redirected = [Console]::IsOutputRedirected
+    $code = $colors_fg[$color]
+    if (( $script:color -ieq "none" ) -or (-not $code) -or (( $script:color -ieq "auto" ) -and $stdout_redirected)) { return $msg }
+    return $($esc+'['+$code+'m'+$msg+$esc+'[0m')
+}
+#
+<#
+.SYNOPSIS
+Writes text to stderr when running in a regular console window,
+to the host's error stream otherwise.
+
+.DESCRIPTION
+Writing to true stderr allows you to write a well-behaved CLI
+as a PS script that can be invoked from a batch file, for instance.
+
+Note that PS sends ALL its streams to *stdout* when invoked from cmd.exe.
+
+This function acts similarly to Write-Host in that it simply calls
+.ToString() on its input; to get the default output format, invoke
+it via a pipeline and precede with Out-String.
+
+ref: http://stackoverflow.com/questions/4998173/how-do-i-write-to-standard-error-in-powershell/15669365#15669365
+
+#>
+function Write-StdErr {
+    param ([PSObject] $InputObject)
+    $outFunc = if ($Host.Name -eq 'ConsoleHost') {
+        [Console]::Error.WriteLine
+    } else {
+        $host.ui.WriteErrorLine
+    }
+    if ($InputObject) {
+        [void] $outFunc.Invoke($InputObject.ToString())
+    } else {
+        [string[]] $lines = @()
+        $Input | foreach-object { $lines += $_.ToString() }
+        [void] $outFunc.Invoke($lines -join "`r`n")
+    }
+}
+#
+function Write-StdOut {
+    param ([PSObject] $InputObject)
+    $outFunc = if ($Host.Name -eq 'ConsoleHost') {
+        [Console]::Out.WriteLine
+    } else {
+        $host.ui.WriteLine
+    }
+    if ($InputObject) {
+        [void] $outFunc.Invoke($InputObject.ToString())
+    } else {
+        [string[]] $lines = @()
+        $Input | foreach-object { $lines += $_.ToString() }
+        [void] $outFunc.Invoke($lines -join "`r`n")
+    }
+}
+#
+function error($msg) { write-stderr $(colorize $('ERR!: '+$msg) darkred) }
+function warn($msg) { write-stderr $(colorize $('WARN: '+$msg) darkyellow) }
+function success($msg) { write-stdout $(colorize $msg darkgreen) }
+#
+function abort($msg) { error $msg; exit 1 }
 
 # dirs
 function cachedir() { return "$scoopdir\cache" } # always local
