@@ -25,7 +25,7 @@ function dep_resolve($app, $arch, $resolved, $unresolved) {
     $null, $manifest, $null, $null = locate $app
     if(!$manifest) { abort "couldn't find manifest for $app" }
 
-    $deps = @(install_deps $manifest $arch) + @(runtime_deps $manifest) | select -uniq
+    $deps = @(install_deps $manifest $arch) + @(runtime_deps $manifest) | select-object -uniq
 
     foreach($dep in $deps) {
         if($resolved -notcontains $dep) {

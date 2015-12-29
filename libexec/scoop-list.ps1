@@ -10,15 +10,15 @@ param($query)
 
 reset_aliases
 
-$local = installed_apps $false | % { @{ name = $_ } }
-$global = installed_apps $true | % { @{ name = $_; global = $true } }
+$local = installed_apps $false | foreach-object { @{ name = $_ } }
+$global = installed_apps $true | foreach-object { @{ name = $_; global = $true } }
 
 $apps = @($local) + @($global)
 
 if($apps) {
-    echo "Installed apps$(if($query) { `" matching '$query'`"}):
+    write-output "Installed apps$(if($query) { `" matching '$query'`"}):
 "
-    $apps | sort { $_.name } | ? { !$query -or ($_.name -match $query) } | % {
+    $apps | sort-object { $_.name } | where-object { !$query -or ($_.name -match $query) } | foreach-object {
         $app = $_.name
         $global = $_.global
         $ver = current_version $app $global

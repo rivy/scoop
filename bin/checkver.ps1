@@ -14,7 +14,7 @@ if($app) { $search = $app }
 
 # get apps to check
 $queue = @()
-gci $dir "$search.json" | % {
+get-childitem $dir "$search.json" | foreach-object {
     $json = parse_json "$dir\$_"
     if($json.checkver) {
         $queue += ,@($_, $json)
@@ -22,12 +22,12 @@ gci $dir "$search.json" | % {
 }
 
 # clear any existing events
-get-event | % {
+get-event | foreach-object {
     remove-event $_.sourceidentifier
 }
 
 # start all downloads
-$queue | % {
+$queue | foreach-object {
     $wc = new-object net.webclient
     register-objectevent $wc downloadstringcompleted -ea stop | out-null
 

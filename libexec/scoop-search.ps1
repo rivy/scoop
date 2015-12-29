@@ -25,28 +25,28 @@ function bin_match($manifest, $query) {
 }
 
 function search_bucket($bucket, $query) {
-    $apps = apps_in_bucket (bucketdir $bucket) | % {
+    $apps = apps_in_bucket (bucketdir $bucket) | foreach-object {
         @{ name = $_ }
     }
 
-    if($query) { $apps = $apps | ? {
+    if($query) { $apps = $apps | where-object {
         if($_.name -match $query) { return $true }
         $bin = bin_match (manifest $_.name $bucket) $query
         if($bin) {
             $_.bin = $bin; return $true;
         }
     } }
-    $apps | % { $_.version = (latest_version $_.name $bucket); $_ }
+    $apps | foreach-object { $_.version = (latest_version $_.name $bucket); $_ }
 }
 
-@($null) + @(buckets) | % { # $null is main bucket
+@($null) + @(buckets) | foreach-object { # $null is main bucket
     $res = search_bucket $_ $query
     if($res) {
         $name = "$_"
         if(!$_) { $name = "main" }
 
         "$name bucket:"
-        $res | % {
+        $res | foreach-object {
             $item = "  $($_.name) ($($_.version))"
             if($_.bin) { $item += " --> includes '$($_.bin)'" }
             $item

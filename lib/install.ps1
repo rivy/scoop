@@ -27,7 +27,7 @@ function install_app($app, $architecture, $global) {
         $check_hash = $false
     }
 
-    echo "installing $app ($version)"
+    write-output "installing $app ($version)"
 
     $dir = ensure (versiondir $app $version $global)
 
@@ -60,7 +60,7 @@ function ensure_architecture($architecture_opt) {
 }
 
 function cache_path($app, $version, $url) {
-    "$cachedir\$app#$version#$($url -replace '[^\w\.\-]+', '_')"
+    "$(cachedir)\$app#$version#$($url -replace '[^\w\.\-]+', '_')"
 }
 
 function appname_from_url($url) {
@@ -99,13 +99,13 @@ function dl_with_cache($app, $version, $url, $to, $cookies, $use_cache = $true) 
     if(!$use_cache) { warn "cache is being ignored" }
 
     if(!(test-path $cached) -or !$use_cache) {
-        $null = ensure $cachedir
+        $null = ensure $(cachedir)
         write-host "downloading $url..." -nonewline
         dl_progress $url "$cached.download" $cookies
-        mv "$cached.download" $cached -force
+        move-item "$cached.download" $cached -force
         write-host "done"
     } else { write-host "loading $url from cache..."}
-    cp $cached $to
+    copy-item $cached $to
 }
 
 function dl_progress($url, $to, $cookies) {
@@ -188,7 +188,7 @@ function dl_urls($app, $version, $manifest, $architecture, $dir, $use_cache = $t
             if(!$ok) {
                 # rm cached
                 $cached = cache_path $app $version $url
-                if(test-path $cached) { rm -force $cached }
+                if(test-path $cached) { remove-item -force $cached }
                 abort $err
             }
         }
@@ -229,13 +229,13 @@ function dl_urls($app, $version, $manifest, $architecture, $dir, $use_cache = $t
 
             if(test-path "$dir\_scoop_extract") { # might have been moved by movedir
                 try {
-                    rm -r -force "$dir\_scoop_extract" -ea stop
+                    remove-item -r -force "$dir\_scoop_extract" -ea stop
                 } catch [system.io.pathtoolongexception] {
                     cmd /c "rmdir /s /q $dir\_scoop_extract"
                 }
             }
 
-            rm "$dir\$fname"
+            remove-item "$dir\$fname"
             write-host "done"
 
             $extracted++
@@ -248,7 +248,7 @@ function dl_urls($app, $version, $manifest, $architecture, $dir, $use_cache = $t
 function cookie_header($cookies) {
     if(!$cookies) { return }
 
-    $vals = $cookies.psobject.properties | % {
+    $vals = $cookies.psobject.properties | foreach-object {
         "$($_.name)=$($_.value)"
     }
 
@@ -263,7 +263,7 @@ function is_in_dir($dir, $check) {
 
 # hashes
 function hash_for_url($manifest, $url, $arch) {
-    $hashes = @(hash $manifest $arch) | ? { $_ -ne $null };
+    $hashes = @(hash $manifest $arch) | where-object { $_ -ne $null };
 
     if($hashes.length -eq 0) { return $null }
 
@@ -307,7 +307,7 @@ function compute_hash($file, $algname) {
     $alg = [system.security.cryptography.hashalgorithm]::create($algname)
     $fs = [system.io.file]::openread($file)
     try {
-        $hexbytes = $alg.computehash($fs) | % { $_.tostring('x2') }
+        $hexbytes = $alg.computehash($fs) | foreach-object { $_.tostring('x2') }
         [string]::join('', $hexbytes)
     } finally {
         $fs.dispose()
@@ -316,13 +316,13 @@ function compute_hash($file, $algname) {
 }
 
 function cmd_available($cmd) {
-    try { gcm $cmd -ea stop } catch { return $false }
+    try { get-command $cmd -ea stop } catch { return $false }
     $true
 }
 
 # for dealing with installers
 function args($config, $dir) {
-    if($config) { return $config | % { (format $_ @{'dir'=$dir}) } }
+    if($config) { return $config | foreach-object { (format $_ @{'dir'=$dir}) } }
     @()
 }
 
@@ -354,11 +354,11 @@ function unpack_inno($fname, $manifest, $dir) {
         abort "failed to unpack innosetup file. see $dir\innounp.log"
     }
 
-    gci "$dir\_scoop_unpack\{app}" -r | mv -dest "$dir" -force
+    get-childitem "$dir\_scoop_unpack\{app}" -r | move-item -dest "$dir" -force
 
-    rmdir -r -force "$dir\_scoop_unpack"
+    remove-item -r -force "$dir\_scoop_unpack"
 
-    rm "$dir\$fname"
+    remove-item "$dir\$fname"
     write-host "done"
 }
 
@@ -397,15 +397,15 @@ function install_msi($fname, $dir, $msi) {
     if(!$installed) {
         abort "installation aborted. you might need to run 'scoop uninstall $app' before trying again."
     }
-    rm $logfile
-    rm $msifile
+    remove-item $logfile
+    remove-item $msifile
 }
 
 function extract_msi($path, $to) {
     $logfile = "$(split-path $path)\msi.log"
     $ok = run 'msiexec' @('/a', "`"$path`"", '/qn', "TARGETDIR=`"$to`"", "/lwe `"$logfile`"")
     if(!$ok) { abort "failed to extract files from $path.`nlog file: $(friendly_path $logfile)" }
-    if(test-path $logfile) { rm $logfile }
+    if(test-path $logfile) { remove-item $logfile }
 }
 
 # deprecated
@@ -415,11 +415,11 @@ function extract_msi($path, $to) {
 function msi_installed($code) {
     $path = "hklm:\software\microsoft\windows\currentversion\uninstall\$code"
     if(!(test-path $path)) { return $false }
-    $key = gi $path
+    $key = get-item $path
     $name = $key.getvalue('displayname')
     $version = $key.getvalue('displayversion')
     $classkey = "IdentifyingNumber=`"$code`",Name=`"$name`",Version=`"$version`""
-    try { $wmi = [wmi]"Win32_Product.$classkey"; $true } catch { $false }
+    try { $null = [wmi]"Win32_Product.$classkey"; $true } catch { $false }
 }
 
 function install_prog($fname, $dir, $installer) {
@@ -436,7 +436,7 @@ function install_prog($fname, $dir, $installer) {
         if(!$installed) {
             abort "installation aborted. you might need to run 'scoop uninstall $app' before trying again."
         }
-        rm $prog
+        remove-item $prog
     }
 }
 
@@ -485,9 +485,9 @@ function shim_def($item) {
 }
 
 function create_shims($manifest, $dir, $global) {
-    $manifest.bin | ?{ $_ -ne $null } | % {
+    $manifest.bin | where-object { $_ -ne $null } | foreach-object {
         $target, $name, $arg = shim_def $_
-        echo "creating shim for $name"
+        write-output "creating shim for $name"
 
         # check valid bin
         $bin = "$dir\$target"
@@ -506,18 +506,18 @@ function rm_shim($name, $shimdir) {
     if(!(test-path $shim)) { # handle no shim from failed install
         warn "shim for $name is missing, skipping"
     } else {
-        echo "removing shim for $name"
-        rm $shim
+        write-output "removing shim for $name"
+        remove-item $shim
     }
 
     # other shim types might be present
-    '.exe', '.shim', '.cmd' | % {
-        if(test-path "$shimdir\$name$_") { rm "$shimdir\$name$_" }
+    '.exe', '.shim', '.cmd' | foreach-object {
+        if(test-path "$shimdir\$name$_") { remove-item "$shimdir\$name$_" }
     }
 }
 
 function rm_shims($manifest, $global) {
-    $manifest.bin | ?{ $_ -ne $null } | % {
+    $manifest.bin | where-object { $_ -ne $null } | foreach-object {
         $target, $name, $null = shim_def $_
         $shimdir = shimdir $global
 
@@ -527,18 +527,18 @@ function rm_shims($manifest, $global) {
 
 # to undo after installers add to path so that scoop manifest can keep track of this instead
 function ensure_install_dir_not_in_path($dir, $global) {
-    $path = (env 'path' $global)
+    $path = (env 'path' -t $global)
 
     $fixed, $removed = find_dir_or_subdir $path "$dir"
     if($removed) {
-        $removed | % { "installer added $(friendly_path $_) to path, removing"}
-        env 'path' $global $fixed
+        $removed | foreach-object { "installer added $(friendly_path $_) to path, removing"}
+        env 'path' -t $global $fixed
     }
 
     if(!$global) {
-        $fixed, $removed = find_dir_or_subdir (env 'path' $true) "$dir"
+        $fixed, $removed = find_dir_or_subdir (env 'path' -t $true) "$dir"
         if($removed) {
-            $removed | % { warn "installer added $_ to system path: you might want to remove this manually (requires admin permission)"}
+            $removed | foreach-object { warn "installer added $_ to system path: you might want to remove this manually (requires admin permission)"}
         }
     }
 }
@@ -547,7 +547,7 @@ function find_dir_or_subdir($path, $dir) {
     $dir = $dir.trimend('\')
     $fixed = @()
     $removed = @()
-    $path.split(';') | % {
+    $path.split(';') | foreach-object {
         if($_) {
             if(($_ -eq $dir) -or ($_ -like "$dir\*")) { $removed += $_ }
             else { $fixed += $_ }
@@ -557,7 +557,7 @@ function find_dir_or_subdir($path, $dir) {
 }
 
 function env_add_path($manifest, $dir, $global) {
-    $manifest.env_add_path | ? { $_ } | % {
+    $manifest.env_add_path | where-object { $_ } | foreach-object {
         $path_dir = "$dir\$($_)"
         if(!(is_in_dir $dir $path_dir)) {
             abort "error in manifest: env_add_path '$_' is outside the app directory"
@@ -570,17 +570,17 @@ function add_first_in_path($dir, $global) {
     $dir = fullpath $dir
 
     # future sessions
-    $null, $currpath = strip_path (env 'path' $global) $dir
-    env 'path' $global "$dir;$currpath"
+    $null, $currpath = strip_path (env 'path' -t $global) $dir
+    env 'path' -t $global "$dir;$currpath"
 
     # this session
     $null, $env:path = strip_path $env:path $dir
-    $env:path = "$dir;$env:path"
+    env 'path' "$dir;$env:path"
 }
 
 function env_rm_path($manifest, $dir, $global) {
     # remove from path
-    $manifest.env_add_path | ? { $_ } | % {
+    $manifest.env_add_path | where-object { $_ } | foreach-object {
         $path_dir = "$dir\$($_)"
         remove_from_path $path_dir $global
     }
@@ -588,53 +588,53 @@ function env_rm_path($manifest, $dir, $global) {
 
 function env_set($manifest, $dir, $global) {
     if($manifest.env_set) {
-        $manifest.env_set | gm -member noteproperty | % {
+        $manifest.env_set | get-member -member noteproperty | foreach-object {
             $name = $_.name;
             $val = format $manifest.env_set.$($_.name) @{ "dir" = $dir }
-            env $name $global $val
-            sc env:\$name $val
+            env $name -t $global $val
+            env $name $val
         }
     }
 }
 function env_rm($manifest, $global) {
     if($manifest.env_set) {
-        $manifest.env_set | gm -member noteproperty | % {
+        $manifest.env_set | get-member -member noteproperty | foreach-object {
             $name = $_.name
-            env $name $global $null
-            if(test-path env:\$name) { rm env:\$name }
+            env $name -t $global $null
+            env $name $null
         }
     }
 }
 
 function pre_install($manifest) {
-    $manifest.pre_install | ? { $_ } | % {
-        echo "running pre-install script..."
-        iex $_
+    $manifest.pre_install | where-object { $_ } | foreach-object {
+        write-output "running pre-install script..."
+        & $( [ScriptBlock]::Create($_) ) ## aka: invoke-expression $_
     }
 }
 
 function post_install($manifest) {
-    $manifest.post_install | ? { $_ } | % {
-        echo "running post-install script..."
-        iex $_
+    $manifest.post_install | where-object { $_ } | foreach-object {
+        write-output "running post-install script..."
+        & $( [ScriptBlock]::Create($_) ) ## aka: invoke-expression $_
     }
 }
 
 function show_notes($manifest) {
     if($manifest.notes) {
-        echo "Notes"
-        echo "-----"
-        echo (wraptext $manifest.notes)
+        write-output "Notes"
+        write-output "-----"
+        write-output (wraptext $manifest.notes)
     }
 }
 
 function all_installed($apps, $global) {
-    $apps | ? { installed $_ $global }
+    $apps | where-object { installed $_ $global }
 }
 
 function prune_installed($apps) {
     $installed = @(all_installed $apps $true) + @(all_installed $apps $false)
-    $apps | ? { $installed -notcontains $_ }
+    $apps | where-object { $installed -notcontains $_ }
 }
 
 # check whether the app failed to install
@@ -658,8 +658,8 @@ function ensure_none_failed($apps, $global) {
 # $from to $to when the app is updated.
 # any files or directories that already exist in $to are skipped
 function travel_dir($from, $to) {
-    $skip_dirs = ls $to -dir | % { "`"$from\$_`"" }
-    $skip_files = ls $to -file | % { "`"$from\$_`"" }
+    $skip_dirs = get-childitem $to -dir | foreach-object { "`"$from\$_`"" }
+    $skip_files = get-childitem $to -file | foreach-object { "`"$from\$_`"" }
 
     robocopy $from $to /s /move /xd $skip_dirs /xf $skip_files > $null
 }

@@ -60,7 +60,7 @@ env_rm_path $manifest $dir $global
 env_rm $manifest $global
 
 
-try { rm -r $dir -ea stop -force }
+try { remove-item -r $dir -ea stop -force }
 catch { abort "couldn't remove $(friendly_path $dir): it may be in use" }
 
 # remove older versions
@@ -68,7 +68,7 @@ $old = @(versions $app $global)
 foreach($oldver in $old) {
     "removing older version, $oldver"
     $dir = versiondir $app $oldver $global
-    try { rm -r -force -ea stop $dir }
+    try { remove-item -r -force -ea stop $dir }
     catch { abort "couldn't remove $(friendly_path $dir): it may be in use" }
 }
 
@@ -77,7 +77,7 @@ if(@(versions $app).length -eq 0) {
     try {
         # if last install failed, the directory seems to be locked and this
         # will throw an error about the directory not existing
-        rm -r $appdir -ea stop -force
+        remove-item -r $appdir -ea stop -force
     } catch {
         if((test-path $appdir)) { throw } # only throw if the dir still exists
     }

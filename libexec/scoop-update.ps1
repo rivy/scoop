@@ -22,6 +22,9 @@
 
 reset_aliases
 
+$update_restart = [int]$env:SCOOP__updateRestart
+$args_initial = $args
+
 $opt, $apps, $err = getopt $args 'gfkq' 'global','force', 'no-cache', 'quiet'
 if($err) { "scoop update: $err"; exit 1 }
 $global = $opt.g -or $opt.global
@@ -31,11 +34,14 @@ $quiet = $opt.q -or $opt.quiet
 
 function update_scoop() {
     # check for git
-    $git = try { gcm git -ea stop } catch { $null }
+    $git = try { get-command git -ea stop } catch { $null }
     if(!$git) { abort "scoop uses git to update itself. run 'scoop install git'." }
+
+    $update_commit_target = 'FETCH_HEAD'  # or, for a complete reset, use "origin/HEAD"
 
     "updating scoop..."
     $currentdir = fullpath $(versiondir 'scoop' 'current')
+    $hash_original = ""
     if(!(test-path "$currentdir\.git")) {
         # load config
         $repo = $(scoop config SCOOP_REPO)
@@ -51,25 +57,44 @@ function update_scoop() {
         }
 
         # remove non-git scoop
-        rm -r -force $currentdir -ea stop
+        remove-item -r -force $currentdir -ea stop
 
         # get git scoop
         git clone -q $repo --branch $branch --single-branch $currentdir
     }
     else {
-        pushd $currentdir
-        git pull -q
-        popd
+        push-location $currentdir
+        $hash_original = git describe --all --long
+        git fetch --quiet
+        git reset --quiet --hard $update_commit_target
+        git clean -fd
+        pop-location
+    }
+    push-location $currentdir
+    $hash_new = git describe --all --long
+    pop-location
+    if ( $hash_new -ne $hash_original ) {
+        $max_restarts = 1
+        if ( $update_restart -gt $max_restarts ) {
+            warn "scoop code was changed, please re-run 'scoop update'"
+        }
+        else {
+            write-host "scoop code was changed, restarting update..."
+            & "$psscriptroot\..\bin\scoop.ps1" update -__updateRestart $($update_restart + 1) $args_initial
+            exit $lastExitCode
+        }
     }
 
-    ensure_scoop_in_path
+    ensure_scoop_in_path $false
     shim "$currentdir\bin\scoop.ps1" $false
 
-    @(buckets) | % {
+    @(buckets) | foreach-object {
         "updating $_ bucket..."
-        pushd (bucketdir $_)
-        git pull -q
-        popd
+        push-location (bucketdir $_)
+        git fetch --quiet
+        git reset --quiet --hard $update_commit_target
+        git clean -fd
+        pop-location
     }
     success 'scoop was updated successfully!'
 }
@@ -86,8 +111,8 @@ function update($app, $global, $quiet = $false) {
     $url = $install.url
 
     # check dependencies
-    $deps = @(deps $app $architecture) | ? { !(installed $_) }
-    $deps | % { install_app $_ $architecture $global }
+    $deps = @(deps $app $architecture) | where-object { !(installed $_) }
+    $deps | foreach-object { install_app $_ $architecture $global }
 
     $version = latest_version $app $bucket $url
     $is_nightly = $version -eq 'nightly'
@@ -141,7 +166,7 @@ function update($app, $global, $quiet = $false) {
 }
 
 function ensure_all_installed($apps, $global) {
-    $app = $apps | ? { !(installed $_ $global) } | select -first 1 # just get the first one that's not installed
+    $app = $apps | where-object { !(installed $_ $global) } | select-object -first 1 # just get the first one that's not installed
     if($app) {
         if(installed $app (!$global)) {
             function wh($g) { if($g) { "globally" } else { "for your account" } }
@@ -156,7 +181,7 @@ function ensure_all_installed($apps, $global) {
 
 # convert list of apps to list of ($app, $global) tuples
 function applist($apps, $global) {
-    return ,@($apps |% { ,@($_, $global) })
+    return ,@($apps | foreach-object { ,@($_, $global) })
 }
 
 if(!$apps) {
@@ -183,7 +208,7 @@ if(!$apps) {
     }
 
     # $apps is now a list of ($app, $global) tuples
-    $apps | % { update @_ $quiet }
+    $apps | foreach-object { update @_ $quiet }
 }
 
 exit 0
