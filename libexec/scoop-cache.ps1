@@ -38,18 +38,18 @@ function filesize($length) {
 switch($cmd) {
     'rm' {
         if(!$app) { 'ERROR: <app> missing'; my_usage; exit 1 }
-        rm "$scoopdir\cache\$app#*"
+        remove-item "$scoopdir\cache\$app#*"
     }
     'show' {
-        $files = @(gci "$scoopdir\cache" | ? { $_.name -match "^$app" })
-        $total_length = ($files | measure length -sum).sum
+        $files = @(get-childitem "$scoopdir\cache" | where-object { $_.name -match "^$app" })
+        $total_length = ($files | measure-object length -sum).sum
 
         $f_app  = @{ expression={"$($_.app) ($($_.version))" }}
         $f_url  = @{ expression={$_.url};alignment='right'}
         $f_size = @{ expression={$_.size}; alignment='right'}
 
 
-        $files | % { cacheinfo $_ } | ft $f_size, $f_app, $f_url -auto -hide
+        $files | foreach-object { cacheinfo $_ } | format-table $f_size, $f_app, $f_url -auto -hide
 
         "total: $($files.length) $(pluralize $files.length 'file' 'files'), $(filesize $total_length)"
     }

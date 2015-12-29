@@ -9,18 +9,18 @@ function bucketdir($name) {
 function known_bucket_repo($name) {
     $dir = versiondir 'scoop' 'current'
     $json = "$dir\buckets.json"
-    $buckets = gc $json -raw | convertfrom-json -ea stop
+    $buckets = get-content $json -raw | convertfrom-json -ea stop
     $buckets.$name
 }
 
 function apps_in_bucket($dir) {
-    gci $dir | ? { $_.name.endswith('.json') } | % { $_ -replace '.json$', '' }
+    get-childitem $dir | where-object { $_.name.endswith('.json') } | foreach-object { $_ -replace '.json$', '' }
 }
 
 function buckets {
     $buckets = @()
     if(test-path $bucketsdir) {
-        gci $bucketsdir | % { $buckets += $_.name }
+        get-childitem $bucketsdir | foreach-object { $buckets += $_.name }
     }
     $buckets
 }

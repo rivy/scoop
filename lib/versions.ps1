@@ -9,11 +9,11 @@ function versions($app, $global) {
     $appdir = appdir $app $global
     if(!(test-path $appdir)) { return @() }
 
-    sort_versions (gci $appdir -dir | % { $_.name })
+    sort_versions (get-childitem $appdir -dir | foreach-object { $_.name })
 }
 
 function version($ver) {
-    $ver.split('.') | % {
+    $ver.split('.') | foreach-object {
         $num = $_ -as [int]
         if($num) { $num } else { $_ }
     }
@@ -38,15 +38,15 @@ function compare_versions($a, $b) {
 }
 
 function qsort($ary, $fn) {
-    if($ary -eq $null) { return @() }
+    if($null -eq $ary) { return @() }
     if(!($ary -is [array])) { return @($ary) }
 
     $pivot = $ary[0]
     $rem = $ary[1..($ary.length-1)]
 
-    $lesser = qsort ($rem | where { (& $fn $_ $pivot) -lt 0 }) $fn
+    $lesser = qsort ($rem | where-object { (& $fn $_ $pivot) -lt 0 }) $fn
 
-    $greater = qsort ($rem | where { (& $fn $_ $pivot) -ge 0 }) $fn
+    $greater = qsort ($rem | where-object { (& $fn $_ $pivot) -ge 0 }) $fn
 
     return @() + $lesser + @($pivot) + $greater
 }

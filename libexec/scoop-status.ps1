@@ -15,11 +15,11 @@ $currentdir = fullpath $(versiondir 'scoop' 'current')
 $needs_update = $false
 
 if(test-path "$currentdir\.git") {
-    pushd $currentdir
+    push-location $currentdir
     git fetch -q origin
     $commits = $(git log "HEAD..origin/$(scoop config SCOOP_BRANCH)" --oneline)
     if($commits) { $needs_update = $true }
-    popd
+    pop-location
 }
 else {
     $needs_update = $true
@@ -35,12 +35,12 @@ $old = @()
 $removed = @()
 $missing_deps = @()
 
-$true, $false | % { # local and global apps
+$true, $false | foreach-object { # local and global apps
     $global = $_
     $dir = appsdir $global
     if(!(test-path $dir)) { return }
 
-    gci $dir | ? name -ne 'scoop' | % {
+    get-childitem $dir | where-object name -ne 'scoop' | foreach-object {
         $app = $_.name
         $version = current_version $app $global
         if($version) {
@@ -58,7 +58,7 @@ $true, $false | % { # local and global apps
             $old += @{ $app = @($version, $manifest.version) }
         }
 
-        $deps = @(runtime_deps $manifest) | ? { !(installed $_) }
+        $deps = @(runtime_deps $manifest) | where-object { !(installed $_) }
         if($deps) {
             $missing_deps += ,(@($app) + @($deps))
         }
@@ -69,7 +69,7 @@ $true, $false | % { # local and global apps
 
 if($old) {
     "updates are available for:"
-    $old.keys | % {
+    $old.keys | foreach-object {
         $versions = $old.$_
         "    $_`: $($versions[0]) -> $($versions[1])"
     }
@@ -77,21 +77,21 @@ if($old) {
 
 if($removed) {
     "these app manifests have been removed:"
-    $removed.keys | % {
+    $removed.keys | foreach-object {
         "    $_"
     }
 }
 
 if($failed) {
     "these apps failed to install:"
-    $failed.keys | % {
+    $failed.keys | foreach-object {
         "    $_"
     }
 }
 
 if($missing_deps) {
     "missing runtime dependencies:"
-    $missing_deps | % {
+    $missing_deps | foreach-object {
         $app, $deps = $_
         "    $app requires $([string]::join(',', $deps))"
     }

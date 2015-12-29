@@ -59,6 +59,6 @@ $apps = install_order $apps $architecture # adds dependencies
 ensure_none_failed $apps $global
 $apps = prune_installed $apps $global # removes dependencies that are already installed
 
-$apps | % { install_app $_ $architecture $global }
+$apps | foreach-object { install_app $_ $architecture $global }
 
 exit 0

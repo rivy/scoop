@@ -32,7 +32,7 @@ function add_bucket($name, $repo) {
         if(!$repo) { "unknown bucket '$name': try specifying <repo>"; $usage_add; exit 1 }
     }
 
-    $git = try { gcm 'git' -ea stop } catch { $null }
+    $git = try { get-command 'git' -ea stop } catch { $null }
     if(!$git) {
         abort "git is required for buckets. run 'scoop install git'."
     }
@@ -62,7 +62,7 @@ function rm_bucket($name) {
         abort "'$name' bucket not found"
     }
 
-    rm $dir -r -force -ea stop
+    remove-item $dir -r -force -ea stop
 }
 
 function list_buckets {
