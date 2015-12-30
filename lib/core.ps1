@@ -3,6 +3,15 @@ $globaldir = $env:SCOOP_GLOBAL, "$($env:programdata.tolower())\scoop" | select-o
 
 $CMDenvpipe = $env:SCOOP__CMDenvpipe
 
+# defaults
+$defaults = @{}
+#
+$defaults['repo.domain'] = 'github.com'
+$defaults['repo.owner'] = 'rivy'
+$defaults['repo.name'] = 'scoop'
+$defaults['repo.branch'] = 'master'
+$defaults['repo'] = "https://$($defaults['repo.domain'])/$($defaults['repo.owner'])/$($defaults['repo.name'])"
+
 # helper functions
 function coalesce($a, $b) { if($a) { return $a } $b }
 function format($str, $hash) {
@@ -185,7 +194,7 @@ function shim_scoop_cmd_code($shim_cmd_path, $path, $arg) {
     # * additional code needed to pipe environment variables back up and into to the original calling CMD process (see shim_scoop_cmd_code_body())
 
     # swallow errors for the case of non-existent CMD shim (eg, during initial installation)
-    $CMD_shim_fullpath = resolve-path $shim_cmd_path -ea SilentlyContinue
+    $CMD_shim_fullpath = resolve-path $shim_cmd_path -ea ignore
     $CMD_shim_content = $null
     if ($CMD_shim_fullpath) {
         $CMD_shim_content = Get-Content $CMD_shim_fullpath

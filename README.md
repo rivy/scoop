@@ -3,14 +3,23 @@ Scoop [![Build status](https://ci.appveyor.com/api/projects/status/jgckhkhe5rdd6
 
 Scoop is a command-line installer for Windows.
 
-Requirements:
+#### Requirements
 
-* [PowerShell 3](http://www.microsoft.com/en-us/download/details.aspx?id=34595)
-* PowerShell must be enabled for your user account e.g. `set-executionpolicy unrestricted -s cu`
+* PowerShell 3+
+* PowerShell script execution policy must configured as either `unrestricted` or `bypass` for your user account (e.g., by using the PowerShell command `set-executionpolicy unrestricted -scope currentuser`)
 
-To install:
+#### Installation
 
-    iex (new-object net.webclient).downloadstring('https://get.scoop.sh')
+To install, paste either of the following set of command strings at the respective shell prompt. Note that if the PowerShell execution policy for the current user is more restrictive than `unrestricted` (i.e., `restricted`, `allsigned`, or `remotesigned`), it will be set to `unrestricted` and saved.
+
+##### CMD Shell &middot; `C:\>`
+
+    powershell -command "'https://raw.github.com/rivy/scoop/master/bin/install.ps1' |%{&$([ScriptBlock]::create((new-object net.webclient).downloadstring($_))) -origin $_}"
+    set PATH=%PATH%;%LOCALAPPDATA%\scoop\shims
+
+##### PowerShell &middot; `PS C:\>`
+
+    'https://raw.github.com/rivy/scoop/master/bin/install.ps1' |%{&$([ScriptBlock]::create((new-object net.webclient).downloadstring($_))) -origin $_}
 
 Once installed, run `scoop help` for instructions.
 

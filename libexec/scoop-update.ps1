@@ -46,13 +46,13 @@ function update_scoop() {
         # load config
         $repo = $(scoop config SCOOP_REPO)
         if(!$repo) {
-            $repo = "http://github.com/lukesampson/scoop"
+            $repo = $defaults['repo']
             scoop config SCOOP_REPO "$repo"
         }
 
         $branch = $(scoop config SCOOP_BRANCH)
         if(!$branch) {
-            $branch = "master"
+            $branch = $defaults['repo.branch']
             scoop config SCOOP_BRANCH "$branch"
         }
 
