@@ -73,7 +73,7 @@ namespace shim {
             }
 
             var config = Config(configPath);
-            var path = Get(config, "path");
+            var path = Path.Combine(dir, Get(config, "path"));
             var add_args = Get(config, "args");
 
             var si = new STARTUPINFO();
