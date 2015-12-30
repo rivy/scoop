@@ -181,54 +181,6 @@ function shim($path, $global, $name, $arg) {
 function shim_scoop_cmd_code($shim_cmd_path, $path, $arg) {
     # specialized code for the scoop CMD shim
     # * special handling is needed for in-progress updates
-
-    $CMD_shim_fullpath = resolve-path $shim_cmd_path
-    $CMD_shim_content = Get-Content $CMD_shim_fullpath
-
-    # prefix code ## handle in-progress updating
-    # updating an in-progress BAT/CMD must be done with precise pre-planning to avoid unanticipated execution paths (and associated possible errors)
-    # NOTE: must assume that the scoop CMD shim may be currently executing (since there is no simple way to determine that condition)
-
-    # NOTE: current scoop CMD shim is in one of two states:
-    # 1. update-naive (older) version which calls scoop.ps1 via powershell as the last statement
-    #    - control flow returns to the script, executing from the character position just after the call statement
-    #    - notably, the position is determined *when the call was initially made in the original source* ignoring any script changes
-    # 2. update-enabled version (calling scoop with either an exiting line/block or via proxy execution), which can be modified without limitation
-
-    $safe_update_signal_text = '*(scoop:#update-enabled)' # "magic" signal string ## the presence of this signal within a shim indicates that it is designed to allow in-progress updates with safety
-
-    $code = "@::$safe_update_signal_text`r`n"
-
-    if (-not ($CMD_shim_content -cmatch [regex]::Escape($safe_update_signal_text))) {
-        # current shim is update-naive
-        $code += '@goto :__START__' + "`r`n"  # embed code for correct future executions; jumps past any buffer segment
-        # buffer the prefix with specifically designed & sized code for safe return/completion of current execution
-        $buffer_text = ''
-        $CMD_shim_original_size = (Get-ChildItem $CMD_shim_fullpath).length
-        $size_diff = $CMD_shim_original_size - $code.length
-        if ($size_diff -lt 0) {
-            # errors may occur upon exiting, ask user for re-run to help normalize the situation
-            warn 'scoop encountered an update inconsistency, please re-run "scoop update"'
-        }
-        elseif ( $size_diff -gt 0 ) {
-            # note: '@' characters, acting as NoOPs, are used to reduce the risk of wrong command execution in the case that we've miscalculated the return/continue location of the execution pointer
-            if ( $size_diff -eq 1 ) { $buffer_text = '@' <# no room for EOL CRLF #>}
-            else { $buffer_text = $('@' * ($size_diff-2)) + "`r`n" }
-        }
-        $code += $buffer_text + '@goto :EOF &:: safely end a returning, and now modified, in-progress script' + "`r`n"
-        $code += '@:__START__' + "`r`n"
-    }
-
-    # body code ## handles update-enabled scoop call
-    $code += '@set "ERRORLEVEL="' + "`r`n"
-    $code += "@powershell -noprofile -ex unrestricted `"& '$(resolve-path $path)' $arg %*; exit `$lastexitcode`" & exit /b ^%%ERRORLEVEL^%%`r`n"
-
-    $code
-}
-
-function shim_scoop_cmd_code($shim_cmd_path, $path, $arg) {
-    # specialized code for the scoop CMD shim
-    # * special handling is needed for in-progress updates
     # * additional code needed to pipe environment variables back up and into to the original calling CMD process (see shim_scoop_cmd_code_body())
 
     $CMD_shim_fullpath = resolve-path $shim_cmd_path
