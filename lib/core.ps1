@@ -183,14 +183,18 @@ function shim_scoop_cmd_code($shim_cmd_path, $path, $arg) {
     # * special handling is needed for in-progress updates
     # * additional code needed to pipe environment variables back up and into to the original calling CMD process (see shim_scoop_cmd_code_body())
 
-    $CMD_shim_fullpath = resolve-path $shim_cmd_path
-    $CMD_shim_content = Get-Content $CMD_shim_fullpath
+    # swallow errors for the case of non-existent CMD shim (eg, during initial installation)
+    $CMD_shim_fullpath = resolve-path $shim_cmd_path -ea SilentlyContinue
+    $CMD_shim_content = $null
+    if ($CMD_shim_fullpath) {
+        $CMD_shim_content = Get-Content $CMD_shim_fullpath
+        }
 
     # prefix code ## handle in-progress updating
     # updating an in-progress BAT/CMD must be done with precise pre-planning to avoid unanticipated execution paths (and associated possible errors)
     # NOTE: must assume that the scoop CMD shim may be currently executing (since there is no simple way to determine that condition)
 
-    # NOTE: current scoop CMD shim is in one of two states:
+    # NOTE: if existent, the current scoop CMD shim is in one of two states:
     # 1. update-naive (older) version which calls scoop.ps1 via powershell as the last statement
     #    - control flow returns to the script, executing from the character position just after the call statement
     #    - notably, the position is determined *when the call was initially made in the original source* ignoring any script changes
@@ -200,7 +204,7 @@ function shim_scoop_cmd_code($shim_cmd_path, $path, $arg) {
 
     $code = "@::$safe_update_signal_text`r`n"
 
-    if (-not ($CMD_shim_content -cmatch [regex]::Escape($safe_update_signal_text))) {
+    if ($CMD_shim_content -and (-not ($CMD_shim_content -cmatch [regex]::Escape($safe_update_signal_text)))) {
         # current shim is update-naive
         $code += '@goto :__START__' + "`r`n"  # embed code for correct future executions; jumps past any buffer segment
         # buffer the prefix with specifically designed & sized code for safe return/completion of current execution
