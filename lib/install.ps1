@@ -219,7 +219,7 @@ function dl_urls($app, $version, $manifest, $architecture, $dir, $use_cache = $t
                 warn "MSI install is deprecated. If you maintain this manifest, please refer to the manifest reference docs"
             }
         } elseif(file_requires_7zip $fname) { # 7zip
-            if(!(7zip_installed)) {
+            if(!(sevenzip_installed)) {
                 warn "aborting: you'll need to run 'scoop uninstall $app' to clean up"
                 abort "7-zip is required. you can install it with 'scoop install 7zip'"
             }
