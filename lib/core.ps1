@@ -114,7 +114,7 @@ function unzip($path,$to) {
         [io.compression.zipfile]::extracttodirectory($path,$to)
     } catch [system.io.pathtoolongexception] {
         # try to fall back to 7zip if path is too long
-        if(7zip_installed) {
+        if(sevenzip_installed) {
             extract_7zip $path $to $false
             return
         } else {

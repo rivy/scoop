@@ -1,4 +1,4 @@
-function 7zip_installed { cmd_available '7z' }
+function sevenzip_installed { cmd_available '7z' }
 
 function requires_7zip($manifest, $architecture) {
     $urls = @(url $manifest $architecture)
