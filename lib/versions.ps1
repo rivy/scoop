@@ -9,7 +9,7 @@ function versions($app, $global) {
     $appdir = appdir $app $global
     if(!(test-path $appdir)) { return @() }
 
-    sort_versions (get-childitem $appdir -dir | foreach-object { $_.name })
+    sort_versions ($(get-childitem $appdir | where-object { $_.PSIsContainer }) | foreach-object { $_.name })
 }
 
 function version($ver) {

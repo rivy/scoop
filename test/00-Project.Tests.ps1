@@ -2,7 +2,7 @@ write-host -f darkyellow "[$(split-path -leaf $MyInvocation.MyCommand.Path)]"
 
 $repo_dir = (Get-Item $MyInvocation.MyCommand.Path).directory.parent.FullName
 
-$repo_files = @( Get-ChildItem $repo_dir -file -recurse -force )
+$repo_files = @( $(Get-ChildItem $repo_dir -recurse -force | where-object { -not $_.PSIsContainer }) )
 
 $project_file_exclusions = @(
     $([regex]::Escape($repo_dir.fullname)+'\\.git\\.*$')
