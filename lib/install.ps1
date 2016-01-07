@@ -682,8 +682,8 @@ function ensure_none_failed($apps, $global) {
 # $from to $to when the app is updated.
 # any files or directories that already exist in $to are skipped
 function travel_dir($from, $to) {
-    $skip_dirs = get-childitem $to -dir | foreach-object { "`"$from\$_`"" }
-    $skip_files = get-childitem $to -file | foreach-object { "`"$from\$_`"" }
+    $skip_dirs = $(get-childitem $to | where-object { $_.PSIsContainer }) | foreach-object { "`"$from\$_`"" }
+    $skip_files = $(get-childitem $to | where-object { -not $_.PSIsContainer }) | foreach-object { "`"$from\$_`"" }
 
     robocopy $from $to /s /move /xd $skip_dirs /xf $skip_files > $null
 }
