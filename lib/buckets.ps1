@@ -1,7 +1,7 @@
 $bucketsdir = "$scoopdir\buckets"
 
 function bucketdir($name) {
-    if(!$name) { return $(rootrelpath "bucket") } # main bucket
+    if(!$name) { $(rootrelpath "bucket"); return } # main bucket
 
     "$bucketsdir\$name"
 }
@@ -29,6 +29,6 @@ function find_manifest($app) {
     $buckets = @($null) + @(buckets) # null for main bucket
     if ($null -ne $buckets) { foreach ($bucket in $buckets) {
         $manifest = manifest $app $bucket
-        if($manifest) { return $manifest, $bucket }
+        if($manifest) { $manifest, $bucket; return }
     }}
 }

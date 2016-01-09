@@ -5,11 +5,11 @@ function hashtable($obj) {
     $obj.psobject.properties | foreach-object {
         $h[$_.name] = hashtable_val $_.value
     }
-    return $h
+    $h
 }
 
 function hashtable_val($obj) {
-    if($null -eq $obj) { return $null }
+    if($null -eq $obj) { $null; return }
     if($obj -is [array]) {
         $arr = @()
         $obj | foreach-object {
@@ -20,16 +20,18 @@ function hashtable_val($obj) {
                 $arr += $val
             }
         }
-        return ,$arr
+        ,$arr
+        return
     }
     if($obj.gettype().name -eq 'pscustomobject') { # -is is unreliable
-        return hashtable $obj
+        hashtable $obj
+        return
     }
-    return $obj # assume primitive
+    $obj # assume primitive
 }
 
 function load_cfg {
-    if(!(test-path $cfgpath)) { return $null }
+    if(!(test-path $cfgpath)) { $null; return }
 
     try {
         hashtable ([System.IO.File]::ReadAllText($(resolve-path $cfgpath)) | convertfrom-jsonNET -ea stop)
@@ -39,7 +41,7 @@ function load_cfg {
 }
 
 function get_config($name) {
-    return $cfg.$name
+    $cfg.$name
 }
 
 function set_config($name, $val) {
