@@ -17,7 +17,7 @@ $default['repo.branch'] = 'master'
 $default['repo'] = "https://$($default['repo.domain'])/$($default['repo.owner'])/$($default['repo.name'])"
 
 # helper functions
-function coalesce($a, $b) { if($a) { return $a } $b }
+function coalesce($a, $b) { if($a) { $a } else { $b } }
 function format($str, $hash) {
     $hash.keys | foreach-object { set-variable $_ $hash[$_] }
     $executionContext.invokeCommand.expandString($str)
@@ -34,18 +34,18 @@ function warn($msg) { write-host $msg -f darkyellow; }
 function success($msg) { write-host $msg -f darkgreen }
 
 # dirs
-function cachedir() { return "$scoopdir\cache" } # always local
-function basedir($global) { if($global) { return $globaldir } $scoopdir }
+function cachedir() { "$scoopdir\cache" } # always local
+function basedir($global) { if($global) { $globaldir } else { $scoopdir } }
 function appsdir($global) { "$(basedir $global)\apps" }
 function shimdir($global) { "$(basedir $global)\shims" }
 function appdir($app, $global) { "$(appsdir $global)\$app" }
 function versiondir($app, $version, $global) { "$(appdir $app $global)\$version" }
 
 # apps
-function sanitary_path($path) { return [regex]::replace($path, "[/\\?:*<>|]", "") }
+function sanitary_path($path) { [regex]::replace($path, "[/\\?:*<>|]", "") }
 function installed($app, $global=$null) {
-    if($null -eq $global) { return (installed $app $true) -or (installed $app $false) }
-    return test-path (appdir $app $global)
+    if($null -eq $global) { (installed $app $true) -or (installed $app $false); return }
+    test-path (appdir $app $global)
 }
 function installed_apps($global) {
     $dir = appsdir $global
@@ -65,7 +65,7 @@ function fullpath($path) { # should be ~ rooted
 function rootrelpath($path) { join-path $projectrootpath $path } # relative to project main directory
 function friendly_path($path) {
     $h = $home; if(!$h.endswith('\')) { $h += '\' }
-    return "$path" -replace ([regex]::escape($h)), "~\"
+    "$path" -replace ([regex]::escape($h)), "~\"
 }
 function is_local($path) {
     ($path -notmatch '^https?://') -and (test-path $path)
@@ -348,7 +348,7 @@ function ensure_in_path($dir, $global) {
 
 function strip_path($orig_path, $dir) {
     $stripped = [string]::join(';', @( $orig_path.split(';') | where-object { $_ -and $_ -ne $dir } ))
-    return ($stripped -ne $orig_path), $stripped
+    ($stripped -ne $orig_path), $stripped
 }
 
 function remove_from_path($dir,$global) {

@@ -197,7 +197,7 @@ function ensure_all_installed($apps, $global) {
 
 # convert list of apps to list of ($app, $global) tuples
 function applist($apps, $global) {
-    return ,@($apps | foreach-object { ,@($_, $global) })
+    ,@($apps | foreach-object { ,@($_, $global) })
 }
 
 if(!$apps) {

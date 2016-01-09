@@ -16,7 +16,7 @@ reset_aliases
 function cacheinfo($file) {
     $app, $version, $url = $file.name -split '#'
     $size = filesize $file.length
-    return new-object psobject -prop @{ app=$app; version=$version; url=$url; size=$size }
+    @{ app=$app; version=$version; url=$url; size=$size }
 }
 
 function filesize($length) {

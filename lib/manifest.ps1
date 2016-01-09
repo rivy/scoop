@@ -6,7 +6,7 @@ function manifest_path($app, $bucket) {
 }
 
 function parse_json($path) {
-    if(!(test-path $path)) { return $null }
+    if(!(test-path $path)) { $null; return }
     [System.IO.File]::ReadAllText($(resolve-path $path)) | convertfrom-jsonNET -ea stop
 }
 
@@ -19,12 +19,12 @@ function url_manifest($url) {
     } catch {
         throw
     }
-    if(!$str) { return $null }
+    if(!$str) { $null; return }
     $str | convertfrom-jsonNET
 }
 
 function manifest($app, $bucket, $url) {
-    if($url) { return url_manifest $url }
+    if($url) { url_manifest $url; return }
     parse_json (manifest_path $app $bucket)
 }
 
@@ -46,22 +46,22 @@ function save_install_info($info, $dir) {
 
 function install_info($app, $version, $global) {
     $path = "$(versiondir $app $version $global)\install.json"
-    if(!(test-path $path)) { return $null }
+    if(!(test-path $path)) { $null; return }
     parse_json $path
 }
 
 function default_architecture {
-    if([intptr]::size -eq 8) { return "64bit" }
+    if([intptr]::size -eq 8) { "64bit"; return }
     "32bit"
 }
 
 function arch_specific($prop, $manifest, $architecture) {
     if($manifest.architecture) {
         $val = $manifest.architecture.$architecture.$prop
-        if($val) { return $val } # else fallback to generic prop
+        if($val) { $val; return } # else fallback to generic prop
     }
 
-    if($manifest.$prop) { return $manifest.$prop }
+    if($manifest.$prop) { $manifest.$prop; return }
 }
 
 function url($manifest, $arch) { arch_specific 'url' $manifest $arch }
