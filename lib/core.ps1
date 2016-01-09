@@ -1,5 +1,5 @@
-$scoopdir = $env:SCOOP, "~\appdata\local\scoop" | select-object -first 1
-$globaldir = $env:SCOOP_GLOBAL, "$($env:programdata.tolower())\scoop" | select-object -first 1
+$scoopdir = $env:SCOOP; if ($null -eq $scoopdir) { $scoopdir = $($env:LocalAppData, $env:AppData | select-object -first 1) + "\scoop" }
+$globaldir = $env:SCOOP_GLOBAL; if ($null -eq $globaldir) { $globaldir = $($env:ProgramData, $env:CommonProgramFiles | select-object -first 1) + "\scoop" }
 
 # projectrootpath will remain $null when core.ps1 is included via the "locationless" initial install script
 $projectrootpath = $null
