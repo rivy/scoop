@@ -25,7 +25,7 @@ To install, paste either of the following set of command strings at the respecti
 ##### CMD Shell &middot; `C:\>`
 
     powershell -command "iex (new-object net.webclient).downloadstring( 'https://raw.github.com/rivy/scoop/master/bin/install.ps1' )"
-    set PATH=%PATH%;%LOCALAPPDATA%\scoop\shims
+    set PATH=%PATH%;%APPDATA%\scoop\shims
 
 ##### PowerShell &middot; `PS C:\>`
 
