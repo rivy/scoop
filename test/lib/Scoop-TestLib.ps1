@@ -61,9 +61,9 @@ function script_fail($msg) {
 }
 
 function script_fmt($var) {
-    if($null -eq $var) { return "`$null" }
-    if($var -is [string]) { return "'$var'" }
-    return $var
+    if($null -eq $var) { "`$null"; return }
+    if($var -is [string]) { "'$var'"; return }
+    $var
 }
 
 # copies fixtures to a working directory
@@ -83,5 +83,5 @@ function setup_working($name) {
     # set up
     copy-item $fixtures $working_dir -r
 
-    return $working_dir
+    $working_dir
 }

@@ -55,8 +55,8 @@ function install_app($app, $architecture, $global) {
 
 function ensure_architecture($architecture_opt) {
     switch($architecture_opt) {
-        '' { return default_architecture }
-        { @('32bit','64bit') -contains $_ } { return $_ }
+        '' { default_architecture; return }
+        { @('32bit','64bit') -contains $_ } { $_; return }
         default { abort "invalid architecture: '$architecture'"}
     }
 }
@@ -93,7 +93,7 @@ function locate($app, $bucket) {
         }
     }
 
-    return $app, $manifest, $bucket, $url
+    $app, $manifest, $bucket, $url
 }
 
 function dl_with_cache($app, $version, $url, $to, $cookies, $use_cache = $true) {
@@ -287,7 +287,7 @@ function is_in_dir($dir, $check) {
 function hash_for_url($manifest, $url, $arch) {
     $hashes = @(hash $manifest $arch) | where-object { $null -ne $_ };
 
-    if($hashes.length -eq 0) { return $null }
+    if($hashes.length -eq 0) { $null; return }
 
     $urls = @(url $manifest $arch)
 
@@ -302,7 +302,8 @@ function check_hash($file, $url, $manifest, $arch) {
     $hash = hash_for_url $manifest $url $arch
     if(!$hash) {
         warn "warning: no hash in manifest. sha256 is:`n$(compute_hash (fullpath $file) 'sha256')"
-        return $true
+        $true
+        return
     }
 
     write-host "checking hash..." -nonewline
@@ -313,16 +314,19 @@ function check_hash($file, $url, $manifest, $arch) {
     }
 
     if(@('md5','sha1','sha256') -notcontains $type) {
-        return $false, "hash type $type isn't supported"
+        $false, "hash type $type isn't supported"
+        return
     }
 
     $actual = compute_hash (fullpath $file) $type
 
     if($actual -ne $expected) {
-        return $false, "hash check failed for $url. expected: $($expected), actual: $($actual)!"
+        $false, "hash check failed for $url. expected: $($expected), actual: $($actual)!"
+        return
     }
     write-host "ok"
-    return $true
+    $true
+    return
 }
 
 function compute_hash($file, $algname) {
@@ -338,13 +342,13 @@ function compute_hash($file, $algname) {
 }
 
 function cmd_available($cmd) {
-    try { get-command $cmd -ea stop } catch { return $false }
+    try { get-command $cmd -ea stop } catch { $false; return }
     $true
 }
 
 # for dealing with installers
 function args($config, $dir) {
-    if($config) { return $config | foreach-object { (format $_ @{'dir'=$dir}) } }
+    if($config) { $config | foreach-object { (format $_ @{'dir'=$dir}) }; return }
     @()
 }
 
@@ -355,16 +359,20 @@ function run($exe, $arg, $msg, $continue_exit_codes) {
         if($proc.exitcode -ne 0) {
             if($continue_exit_codes -and ($continue_exit_codes.containskey($proc.exitcode))) {
                 warn $continue_exit_codes[$proc.exitcode]
-                return $true
+                $true
+                return
             }
-            write-host "exit code was $($proc.exitcode)"; return $false
+            write-host "exit code was $($proc.exitcode)"
+            $false
+            return
         }
     } catch {
         write-host -f darkred $_.exception.tostring()
-        return $false
+        $false
+        return
     }
     if($msg) { write-host "done" }
-    return $true
+    $true
 }
 
 function unpack_inno($fname, $manifest, $dir) {
@@ -440,7 +448,7 @@ function extract_lessmsi($path, $to) {
 # http://blogs.technet.com/b/heyscriptingguy/archive/2011/12/14/use-powershell-to-find-and-uninstall-software.aspx
 function msi_installed($code) {
     $path = "hklm:\software\microsoft\windows\currentversion\uninstall\$code"
-    if(!(test-path $path)) { return $false }
+    if(!(test-path $path)) { $false; return }
     $key = get-item $path
     $name = $key.getvalue('displayname')
     $version = $key.getvalue('displayversion')
@@ -506,8 +514,8 @@ function run_uninstaller($manifest, $architecture, $dir) {
 
 # get target, name, arguments for shim
 function shim_def($item) {
-    if($item -is [array]) { return $item }
-    return $item, (strip_ext (fname $item)), $null
+    if($item -is [array]) { $item; return }
+    $item, (strip_ext (fname $item)), $null
 }
 
 function create_shims($manifest, $dir, $global) {
@@ -614,7 +622,7 @@ function find_dir_or_subdir($path, $dir) {
             else { $fixed += $_ }
         }
     }
-    return [string]::join(';', $fixed), $removed
+    [string]::join(';', $fixed), $removed
 }
 
 function env_add_path($manifest, $dir, $global) {
@@ -702,10 +710,10 @@ function prune_installed($apps) {
 # check whether the app failed to install
 function failed($app, $global) {
     $ver = current_version $app $global
-    if(!$ver) { return $false }
+    if(!$ver) { $false; return }
     $info = install_info $app $ver $global
-    if(!$info) { return $true }
-    return $false
+    if(!$info) { $true; return }
+    $false
 }
 
 function ensure_none_failed($apps, $global) {
