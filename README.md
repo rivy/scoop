@@ -5,7 +5,7 @@ Scoop is a command-line installer for Windows.
 
 #### Requirements
 
-* PowerShell 3+
+* Windows 7sp1+ (PowerShell 2+)
 * PowerShell script execution policy must configured as either `unrestricted` or `bypass` for your user account
 
 ##### PowerShell Execution Policy
