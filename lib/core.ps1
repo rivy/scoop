@@ -68,7 +68,8 @@ function dl($url,$to) {
 function env { param($name,$value,$targetEnvironment)
     if ( $PSBoundParameters.ContainsKey('targetEnvironment') ) {
         # $targetEnvironment is expected to be $null, [bool], [string], or [System.EnvironmentVariableTarget]
-        if ($null -eq $targetEnvironment) { $targetEnvironment = [System.EnvironmentVariableTarget]::Process }
+        # NOTE: if $targetEnvironment is specified, either 'User' or 'System' will be selected (allows usage of $global == $null or $false for 'User')
+        if ($null -eq $targetEnvironment) { $targetEnvironment = [System.EnvironmentVariableTarget]::User }
         elseif ($targetEnvironment -is [bool]) {
             # from initial usage pattern
             if ($targetEnvironment) { $targetEnvironment = [System.EnvironmentVariableTarget]::Machine }
