@@ -1,3 +1,5 @@
+write-host -f darkyellow "[$(split-path -leaf $MyInvocation.MyCommand.Path)]"
+
 . "$psscriptroot\..\libexec\scoop-alias.ps1" | out-null
 
 reset_aliases
