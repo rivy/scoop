@@ -52,7 +52,7 @@ describe 'Project origin' {
 
     $install_text = [System.IO.File]::ReadAllText([System.IO.Path]::GetFullPath([System.IO.Path]::Combine($repo_dir,'.\bin\install.ps1')))
 
-    it 'bin\install.ps1 defaults match origin defaults' {
+    it '"bin\install.ps1" defaults match origin defaults' {
         # ex: ...
         # # default values
         # $repo_domain = 'github.com'
@@ -75,7 +75,7 @@ describe 'Project origin' {
 
         if ($bad_keys.Count -gt 0)
         {
-            throw "The following defaults are missing or do not match:`n$($bad_keys -join "`n")"
+            throw "The following defaults in `"bin\install.ps1`" are missing or do not match:`n$($bad_keys -join "`n")"
         }
     }
 
