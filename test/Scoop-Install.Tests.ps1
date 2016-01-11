@@ -1,4 +1,4 @@
-. "$psscriptroot\Scoop-TestLib.ps1"
+. "$psscriptroot\lib\Scoop-TestLib.ps1"
 . "$psscriptroot\..\lib\core.ps1"
 . "$psscriptroot\..\lib\install.ps1"
 

@@ -1,4 +1,4 @@
-. "$psscriptroot\Scoop-TestLib.ps1"
+. "$psscriptroot\lib\Scoop-TestLib.ps1"
 . "$psscriptroot\..\lib\versions.ps1"
 
 describe "versions" {
