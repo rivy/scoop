@@ -198,7 +198,7 @@ function shim_scoop_cmd_code($shim_cmd_path, $path, $arg) {
     # * additional code needed to pipe environment variables back up and into to the original calling CMD process (see shim_scoop_cmd_code_body())
 
     # swallow errors for the case of non-existent CMD shim (eg, during initial installation)
-    $CMD_shim_fullpath = resolve-path $shim_cmd_path -ea ignore
+    $CMD_shim_fullpath = resolve-path $shim_cmd_path -ea SilentlyContinue
     $CMD_shim_content = $null
     if ($CMD_shim_fullpath) {
         $CMD_shim_content = Get-Content $CMD_shim_fullpath
@@ -373,7 +373,7 @@ function ensure_scoop_in_path($global) {
 }
 
 function ensure_robocopy_in_path {
-    if(!(get-command robocopy -ea ignore)) {
+    if(!(get-command robocopy -ea SilentlyContinue)) {
         shim "C:\Windows\System32\Robocopy.exe" $false
     }
 }
@@ -417,7 +417,7 @@ $default_aliases = @{
 }
 
 function reset_alias($name, $value) {
-    if($existing = get-alias $name -ea ignore | where-object { $_.options -match 'readonly' }) {
+    if($existing = get-alias $name -ea SilentlyContinue | where-object { $_.options -match 'readonly' }) {
         if($existing.definition -ne $value) {
             write-host "alias $name is read-only; can't reset it" -f darkyellow
         }
