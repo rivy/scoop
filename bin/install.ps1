@@ -56,7 +56,7 @@ switch -wildcard ($repo_domain) {
     }
 }
 
-write-host "installing from " -nonewline; write-host "$repo_domain/$repo_owner/repo_name@repo_branch" -f yellow
+write-host "installing from " -nonewline; write-host "${repo_domain}:${repo_owner}/${repo_name}@${repo_branch}" -f yellow
 
 # get core functions
 $core_url = $($repo_base_raw+'/lib/core.ps1')
