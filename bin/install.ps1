@@ -56,11 +56,7 @@ switch -wildcard ($repo_domain) {
     }
 }
 
-if ($_args) { "args = '$_args'" }
-if ($origin) {
-    write-output "origin = $repo_domain/$repo_owner/repo_name@repo_branch"
-}
-# if($myinvocation.commandorigin -eq 'Internal') { return } else { exit 1 }
+write-host "installing from " -nonewline; write-host "$repo_domain/$repo_owner/repo_name@repo_branch" -f yellow
 
 # get core functions
 $core_url = $($repo_base_raw+'/lib/core.ps1')
@@ -78,7 +74,7 @@ $dir = ensure (versiondir 'scoop' 'current')
 # ensure minimally liberal execution policy
 $ep = get-executionpolicy
 if (-not ($ep -imatch '^(bypass|unrestricted)$')) {
-    write-host 'Default execution policy changed to `' -nonewline; write-host 'Unrestricted' -nonewline -f yellow; write-host '`'
+    write-host 'Default execution policy changed to `' -nonewline; write-host 'unrestricted' -nonewline -f yellow; write-host '`'
     set-executionpolicy unrestricted -scope currentuser
 }
 
@@ -100,4 +96,4 @@ shim "$dir\bin\scoop.ps1" $false
 ensure_robocopy_in_path
 ensure_scoop_in_path
 success 'scoop was installed successfully!'
-write-output "type 'scoop help' for instructions"
+write-output "type ``scoop help`` for instructions"
