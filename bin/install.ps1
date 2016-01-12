@@ -1,10 +1,21 @@
 #requires -v 3
+
 param(
     [parameter(mandatory=$false)][string] $origin = $null,
-    [parameter(ValueFromRemainingArguments=$true)][array] $args = @()
+    ## NOTE: '_args' is used instead of 'args' to avoid errors due to optimization if/when executed with iex(...)
+    [parameter(ValueFromRemainingArguments=$true)][array] $_args = @()
     )
 
 $erroractionpreference='stop' # quit if anything goes wrong
+
+# remote installation instructions (multiple alternatives)
+# 1 .. `iex (new-object net.webclient).downloadstring( 'REPO_URL/bin/install.ps1' )`
+# 2 .. `'REPO_URL/bin/install.ps1' |%{ iex (new-object net.webclient).downloadstring($_) }`
+# 3 .. `'REPO_URL/bin/install.ps1' |%{&$([ScriptBlock]::create((new-object net.webclient).downloadstring($_))) OPTIONAL_ARGS/PARMS}"
+
+# known REPO_URL origin templates
+# [BitBucket] REPO_URL == https://bitbucket.org/OWNER/NAME/raw/BRANCH  ## regex == '^https?://[^/]*?(?<domain>bitbucket.org)/(?<owner>[^/]+)/(?<name>[^/]+)/raw/(?<branch>[^/\n]+)'
+# [GitHub] REPO_URL == https://raw.github.com/OWNER/NAME/BRANCH  ## regex == '^https?://[^/]*?(?<domain>github.com)/(?<owner>[^/]+)/(?<name>[^/]+)/(?<branch>[^/\n]+)'
 
 # default values
 $repo_domain = 'github.com'
@@ -12,10 +23,7 @@ $repo_owner = 'rivy'
 $repo_name = 'scoop'
 $repo_branch = 'master'
 
-# known origin templates
-# [BitBucket] https://bitbucket.org/OWNER/NAME/raw/BRANCH/bin/install.ps1
-# [GitHub] https://raw.github.com/OWNER/NAME/BRANCH/bin/install.ps1
-
+# read origin parameter (if supplied)
 if ($origin) {
     if ( $($origin -imatch '^https?://[^/]*?(?<domain>bitbucket.org)/(?<owner>[^/]+)/(?<name>[^/]+)/raw/(?<branch>[^/\n]+)') `
      -or $($origin -imatch '^https?://[^/]*?(?<domain>github.com)/(?<owner>[^/]+)/(?<name>[^/]+)/(?<branch>[^/\n]+)')
@@ -27,6 +35,8 @@ if ($origin) {
         $repo_branch = $matches.branch
     }
 }
+
+# build origin URLs
 switch -wildcard ($repo_domain) {
     "bitbucket.org" {
         # [Bitbucket]
@@ -46,7 +56,7 @@ switch -wildcard ($repo_domain) {
     }
 }
 
-# "args = $args"
+if ($_args) { "args = '$_args'" }
 if ($origin) {
     write-output "origin = $repo_domain/$repo_owner/repo_name@repo_branch"
 }
