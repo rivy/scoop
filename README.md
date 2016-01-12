@@ -18,12 +18,12 @@ To install, paste either of the following set of command strings at the respecti
 
 ##### CMD Shell &middot; `C:\>`
 
-    powershell -command "'https://raw.github.com/rivy/scoop/master/bin/install.ps1' |%{&$([ScriptBlock]::create((new-object net.webclient).downloadstring($_))) -origin $_}"
+    powershell -command "iex (new-object net.webclient).downloadstring( 'https://raw.github.com/rivy/scoop/master/bin/install.ps1' )"
     set PATH=%PATH%;%LOCALAPPDATA%\scoop\shims
 
 ##### PowerShell &middot; `PS C:\>`
 
-    'https://raw.github.com/rivy/scoop/master/bin/install.ps1' |%{&$([ScriptBlock]::create((new-object net.webclient).downloadstring($_))) -origin $_}
+    iex (new-object net.webclient).downloadstring( 'https://raw.github.com/rivy/scoop/master/bin/install.ps1' )
 
 Once installed, run `scoop help` for instructions.
 
