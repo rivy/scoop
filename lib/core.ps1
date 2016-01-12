@@ -3,6 +3,15 @@ $globaldir = $env:SCOOP_GLOBAL, "$($env:programdata.tolower())\scoop" | select-o
 
 $CMDenvpipe = $env:SCOOP__CMDenvpipe
 
+# defaults
+$defaults = @{}
+#
+$defaults['repo.domain'] = 'github.com'
+$defaults['repo.owner'] = 'rivy'
+$defaults['repo.name'] = 'scoop'
+$defaults['repo.branch'] = 'master'
+$defaults['repo'] = "https://$($defaults['repo.domain'])/$($defaults['repo.owner'])/$($defaults['repo.name'])"
+
 # helper functions
 function coalesce($a, $b) { if($a) { return $a } $b }
 function format($str, $hash) {
@@ -68,7 +77,8 @@ function dl($url,$to) {
 function env { param($name,$value,$targetEnvironment)
     if ( $PSBoundParameters.ContainsKey('targetEnvironment') ) {
         # $targetEnvironment is expected to be $null, [bool], [string], or [System.EnvironmentVariableTarget]
-        if ($null -eq $targetEnvironment) { $targetEnvironment = [System.EnvironmentVariableTarget]::Process }
+        # NOTE: if $targetEnvironment is specified, either 'User' or 'System' will be selected (allows usage of $global == $null or $false for 'User')
+        if ($null -eq $targetEnvironment) { $targetEnvironment = [System.EnvironmentVariableTarget]::User }
         elseif ($targetEnvironment -is [bool]) {
             # from initial usage pattern
             if ($targetEnvironment) { $targetEnvironment = [System.EnvironmentVariableTarget]::Machine }
@@ -87,7 +97,7 @@ function env { param($name,$value,$targetEnvironment)
     if($PSBoundParameters.ContainsKey('value')) {
         [environment]::setEnvironmentVariable($name,$value,$targetEnvironment)
         if (($targetEnvironment -eq [System.EnvironmentVariableTarget]::Process) -and ($null -ne $CMDenvpipe)) {
-            "set " + ( CMD_SET_encode_arg("$name=$value") ) | out-file $CMDenvpipe -encoding OEM -append
+            "set " + ( CMD_SET_encode_arg("$name=$value") ) | out-file $CMDenvpipe -encoding DEFAULT -append
         }
     }
     else { [environment]::getEnvironmentVariable($name,$targetEnvironment) }
@@ -135,46 +145,46 @@ function shim($path, $global, $name, $arg) {
 
     $shim = "$abs_shimdir\$($name.tolower()).ps1"
 
-    # # convert to relative path
-    # push-location $abs_shimdir
-    # $relative_path = resolve-path -relative $path
-    # pop-location
+    # convert to relative path
+    push-location $abs_shimdir
+    $shimdir_relative_path = resolve-path -relative $path
+    pop-location
 
-    write-output '# ensure $HOME is set for MSYS programs' | out-file $shim -encoding oem
-    write-output "if(!`$env:home) { `$env:home = `"`$home\`" }" | out-file $shim -encoding oem -append
-    write-output 'if($env:home -eq "\") { $env:home = $env:allusersprofile }' | out-file $shim -encoding oem -append
-    write-output "`$path = `"$path`"" | out-file $shim -encoding oem -append
+    write-output '# ensure $HOME is set for MSYS programs' | out-file $shim -encoding DEFAULT
+    write-output "if(!`$env:home) { `$env:home = `"`$home\`" }" | out-file $shim -encoding DEFAULT -append
+    write-output 'if($env:home -eq "\") { $env:home = $env:allusersprofile }' | out-file $shim -encoding DEFAULT -append
+    write-output "`$path = join-path `"`$psscriptroot`" `"$shimdir_relative_path`"" | out-file $shim -encoding DEFAULT -append
     if($arg) {
-        write-output "`$args = '$($arg -join "', '")', `$args" | out-file $shim -encoding oem -append
+        write-output "`$args = '$($arg -join "', '")', `$args" | out-file $shim -encoding DEFAULT -append
     }
-    write-output 'if($myinvocation.expectingInput) { $input | & $path @args } else { & $path @args }' | out-file $shim -encoding oem -append
+    write-output 'if($myinvocation.expectingInput) { $input | & "$path" @args } else { & "$path" @args }' | out-file $shim -encoding DEFAULT -append
 
     if($path -match '\.exe$') {
         # for programs with no awareness of any shell
         $shim_exe = "$(strip_ext($shim)).shim"
         copy-item "$(versiondir 'scoop' 'current')\supporting\shimexe\shim.exe" "$(strip_ext($shim)).exe" -force
-        write-output "path = $(resolve-path $path)" | out-file $shim_exe -encoding oem
+        write-output "path = $shimdir_relative_path" | out-file $shim_exe -encoding DEFAULT
         if($arg) {
-            write-output "args = $arg" | out-file $shim_exe -encoding oem -append
+            write-output "args = $arg" | out-file $shim_exe -encoding DEFAULT -append
         }
     } elseif($path -match '\.((bat)|(cmd))$') {
         # shim .bat, .cmd so they can be used by programs with no awareness of PSH
         # NOTE: this code transfers execution flow via hand-off, not a call, so any modifications if/while in-progress are safe
         $shim_cmd = "$(strip_ext($shim)).cmd"
-        ':: ensure $HOME is set for MSYS programs'           | out-file $shim_cmd -encoding oem
-        '@if "%home%"=="" set home=%homedrive%%homepath%\'   | out-file $shim_cmd -encoding oem -append
-        '@if "%home%"=="\" set home=%allusersprofile%\'      | out-file $shim_cmd -encoding oem -append
-        "@`"$(resolve-path $path)`" $arg %*"                 | out-file $shim_cmd -encoding oem -append
+        ':: ensure $HOME is set for MSYS programs'           | out-file $shim_cmd -encoding DEFAULT
+        '@if "%home%"=="" set home=%homedrive%%homepath%\'   | out-file $shim_cmd -encoding DEFAULT -append
+        '@if "%home%"=="\" set home=%allusersprofile%\'      | out-file $shim_cmd -encoding DEFAULT -append
+        "@`"%~dp0.\$shimdir_relative_path`" $arg %*"         | out-file $shim_cmd -encoding DEFAULT -append
     } elseif($path -match '\.ps1$') {
         # make ps1 accessible from cmd.exe
         $shim_cmd = "$(strip_ext($shim)).cmd"
         # default code; NOTE: only scoop knows about and manipulates shims so, by default, no special care is needed for other apps
-        $code = "@powershell -noprofile -ex unrestricted `"& '$(resolve-path $path)' $arg %* ; exit `$lastexitcode`""
+        $code = "@powershell -noprofile -ex unrestricted `"& '%~dp0.\$shimdir_relative_path' $arg %* ; exit `$lastexitcode`""
         if ($name -eq 'scoop') {
             # shimming self; specialized code is required
             $code = shim_scoop_cmd_code $shim_cmd $path $arg
         }
-        $code | out-file $shim_cmd -encoding oem
+        $code | out-file $shim_cmd -encoding DEFAULT
     }
 }
 
@@ -184,7 +194,7 @@ function shim_scoop_cmd_code($shim_cmd_path, $path, $arg) {
     # * additional code needed to pipe environment variables back up and into to the original calling CMD process (see shim_scoop_cmd_code_body())
 
     # swallow errors for the case of non-existent CMD shim (eg, during initial installation)
-    $CMD_shim_fullpath = resolve-path $shim_cmd_path -ea SilentlyContinue
+    $CMD_shim_fullpath = resolve-path $shim_cmd_path -ea ignore
     $CMD_shim_content = $null
     if ($CMD_shim_fullpath) {
         $CMD_shim_content = Get-Content $CMD_shim_fullpath
@@ -225,12 +235,12 @@ function shim_scoop_cmd_code($shim_cmd_path, $path, $arg) {
     }
 
     # body code ## handles update-enabled scoop call and the environment variable pipe
-    $code += shim_scoop_cmd_code_body $(resolve-path $path) $arg
+    $code += shim_scoop_cmd_code_body $shimdir_relative_path $arg
 
     $code
 }
 
-function shim_scoop_cmd_code_body($path, $arg) {
+function shim_scoop_cmd_code_body($shimdir_relative_path, $arg) {
 # shim startup / initialization code
 $code = '
 @set "ERRORLEVEL="
@@ -267,7 +277,7 @@ echo setlocal >> "%__oosource%"
 # shim code adding scoop call to proxy
 $code += "
 @::* out-of-source proxy code to call scoop
-echo call powershell -NoProfile -ExecutionPolicy unrestricted -Command ^`"^& '$path' -__CMDenvpipe '%__pipe%' $arg %*^`" >> `"%__oosource%`"
+echo call powershell -NoProfile -ExecutionPolicy unrestricted -Command ^`"^& '%~dp0.\$shimdir_relative_path' -__CMDenvpipe '%__pipe%' $arg %*^`" >> `"%__oosource%`"
 "
 # shim code adding piping of environment changes and cleanup/exit to proxy
 $code += '

@@ -1,3 +1,5 @@
+write-host -f darkyellow "[$(split-path -leaf $MyInvocation.MyCommand.Path)]"
+
 $repo_dir = (Get-Item $MyInvocation.MyCommand.Path).directory.parent.FullName
 
 $repo_files = @( Get-ChildItem $repo_dir -file -recurse -force )
@@ -65,7 +67,7 @@ describe 'Project code' {
 
         if ($badFiles.Count -gt 0)
         {
-            throw "The following files have syntax errors: `r`n`r`n$($badFiles -join "`r`n")"
+            throw "The following files have syntax errors:`n`n$($badFiles -join "`n")"
         }
     }
 
@@ -85,7 +87,7 @@ describe 'Style constraints for non-binary project files' {
     it $('non-binary project files exist ({0} found)' -f $files.Count) -skip:$(-not $files_exist) {
         if (-not ($files.Count -gt 0))
         {
-            throw "No non-binary project were found"
+            throw "No non-binary project files were found"
         }
     }
 
@@ -106,7 +108,7 @@ describe 'Style constraints for non-binary project files' {
 
         if ($badFiles.Count -gt 0)
         {
-            throw "The following files have utf-8 BOM: `r`n`r`n$($badFiles -join "`r`n")"
+            throw "The following files have utf-8 BOM:`n`n$($badFiles -join "`n")"
         }
     }
 
@@ -124,7 +126,7 @@ describe 'Style constraints for non-binary project files' {
 
         if ($badFiles.Count -gt 0)
         {
-            throw "The following files do not end with a newline: `r`n`r`n$($badFiles -join "`r`n")"
+            throw "The following files do not end with a newline:`n`n$($badFiles -join "`n")"
         }
     }
 
@@ -149,7 +151,7 @@ describe 'Style constraints for non-binary project files' {
 
         if ($badFiles.Count -gt 0)
         {
-            throw "The following files have non-CRLF line endings: `r`n`r`n$($badFiles -join "`r`n")"
+            throw "The following files have non-CRLF line endings:`n`n$($badFiles -join "`n")"
         }
     }
 
@@ -172,7 +174,7 @@ describe 'Style constraints for non-binary project files' {
 
         if ($badLines.Count -gt 0)
         {
-            throw "The following $($badLines.Count) lines contain trailing whitespace: `r`n`r`n$($badLines -join "`r`n")"
+            throw "The following $($badLines.Count) lines contain trailing whitespace:`n`n$($badLines -join "`n")"
         }
     }
 
@@ -198,7 +200,7 @@ describe 'Style constraints for non-binary project files' {
 
         if ($badLines.Count -gt 0)
         {
-            throw "The following $($badLines.Count) lines contain TABs within leading whitespace: `r`n`r`n$($badLines -join "`r`n")"
+            throw "The following $($badLines.Count) lines contain TABs within leading whitespace:`n`n$($badLines -join "`n")"
         }
     }
 

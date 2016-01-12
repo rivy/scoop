@@ -10,6 +10,7 @@
 #   --force, -f     force update even when there isn't a newer version
 #   --no-cache, -k  don't use the download cache
 #   --quiet, -q     hide extraneous messages
+
 . "$psscriptroot\..\lib\core.ps1"
 . "$psscriptroot\..\lib\install.ps1"
 . "$psscriptroot\..\lib\decompress.ps1"
@@ -43,18 +44,9 @@ function update_scoop() {
     $currentdir = fullpath $(versiondir 'scoop' 'current')
     $hash_original = ""
     if(!(test-path "$currentdir\.git")) {
-        # load config
-        $repo = $(scoop config SCOOP_REPO)
-        if(!$repo) {
-            $repo = "http://github.com/lukesampson/scoop"
-            scoop config SCOOP_REPO "$repo"
-        }
-
-        $branch = $(scoop config SCOOP_BRANCH)
-        if(!$branch) {
-            $branch = "master"
-            scoop config SCOOP_BRANCH "$branch"
-        }
+        # load defaults
+        $repo = $defaults['repo']
+        $branch = $defaults['repo.branch']
 
         # remove non-git scoop
         remove-item -r -force $currentdir -ea stop

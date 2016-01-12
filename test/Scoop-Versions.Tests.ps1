@@ -1,4 +1,6 @@
-. "$psscriptroot\Scoop-TestLib.ps1"
+write-host -f darkyellow "[$(split-path -leaf $MyInvocation.MyCommand.Path)]"
+
+. "$psscriptroot\lib\Scoop-TestLib.ps1"
 . "$psscriptroot\..\lib\versions.ps1"
 
 describe "versions" {
