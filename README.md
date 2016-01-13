@@ -53,7 +53,7 @@ scoop install curl grep sed less tail touch
 scoop install python ruby go perl
 ```
 
-If you've built software that you'd like others to use, Scoop is an alternative to building an installer (e.g. MSI or InnoSetup)—you just need to zip your program and provide a JSON manifest that describes how to install it.
+If you've built software that you'd like others to use, Scoop is an alternative to building an installer (e.g. MSI or InnoSetup) &mdash; you just need to zip your program and provide a JSON manifest that describes how to install it.
 
 ### [Documentation](https://github.com/lukesampson/scoop/wiki)
 
