@@ -3,7 +3,7 @@ Scoop [![Build status](https://ci.appveyor.com/api/projects/status/jgckhkhe5rdd6
 
 Scoop is a command-line installer for Windows.
 
-#### Requirements
+### Requirements
 
 * Windows 7sp1+ (PowerShell 2+)
 * PowerShell script execution policy must configured as either `unrestricted` or `bypass` for your user account
@@ -18,7 +18,7 @@ TL;DR: for Win7sp1, [install NET 4.0+](https://www.microsoft.com/en-us/download/
 
 Windows 7sp1 has NET framework versions 1.0, 1.1, 2.0, 3.0 and 3.5 included, but many current software builds require NET framework 4.0+. So, it is recommended that a recent NET 4.0+ framework be installed (eg, [NET 4.6](https://www.microsoft.com/en-us/download/details.aspx?id=48137)), either via [direct download](https://www.microsoft.com/en-us/download/details.aspx?id=48137) or through the Windows Update mechanism. Later Windows versions have the NET 4.0 included and require no extra efforts.
 
-#### Installation
+### Installation
 
 To install, paste either of the following set of command strings at the respective shell prompt.
 
