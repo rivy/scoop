@@ -4,13 +4,13 @@ $globaldir = $env:SCOOP_GLOBAL, "$($env:programdata.tolower())\scoop" | select-o
 $CMDenvpipe = $env:SCOOP__CMDenvpipe
 
 # defaults
-$defaults = @{}
+$default = @{}
 #
-$defaults['repo.domain'] = 'github.com'
-$defaults['repo.owner'] = 'rivy'
-$defaults['repo.name'] = 'scoop'
-$defaults['repo.branch'] = 'master'
-$defaults['repo'] = "https://$($defaults['repo.domain'])/$($defaults['repo.owner'])/$($defaults['repo.name'])"
+$default['repo.domain'] = 'github.com'
+$default['repo.owner'] = 'rivy'
+$default['repo.name'] = 'scoop'
+$default['repo.branch'] = 'master'
+$default['repo'] = "https://$($default['repo.domain'])/$($default['repo.owner'])/$($default['repo.name'])"
 
 # helper functions
 function coalesce($a, $b) { if($a) { return $a } $b }
