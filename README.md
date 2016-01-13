@@ -1,7 +1,7 @@
-Scoop [![Build status](https://ci.appveyor.com/api/projects/status/jgckhkhe5rdd6586/branch/master?svg=true)](https://ci.appveyor.com/project/rivy/scoop/branch/master)
-=====
+`scoop` [![Build status](https://ci.appveyor.com/api/projects/status/jgckhkhe5rdd6586/branch/master?svg=true)](https://ci.appveyor.com/project/rivy/scoop/branch/master)
+=======
 
-Scoop is a command-line installer for Windows.
+`scoop` is a command-line installer for Windows.
 
 ### Requirements
 
@@ -33,10 +33,10 @@ To install, paste either of the following set of command strings at the respecti
 
 Once installed, run `scoop help` for instructions.
 
-What does Scoop do?
+What does `scoop` do?
 -------------------
 
-Scoop installs programs from the command line with a minimal amount of friction. It tries to eliminate things like:
+`scoop` installs programs from the command line with a minimal amount of friction. It tries to eliminate things like:
 * Permission popup windows
 * GUI wizard-style installers
 * Path pollution from installing lots of programs
@@ -44,7 +44,7 @@ Scoop installs programs from the command line with a minimal amount of friction.
 * The need to find and install dependencies
 * The need to perform extra setup steps to get a working program
 
-Scoop is very scriptable, so you can run repeatable setups to get your environment just the way you like, e.g.:
+`scoop` is very scriptable, so you can run repeatable setups to get your environment just the way you like, e.g.:
 
 ```powershell
 scoop install sudo
@@ -53,7 +53,7 @@ scoop install curl grep sed less tail touch
 scoop install python ruby go perl
 ```
 
-If you've built software that you'd like others to use, Scoop is an alternative to building an installer (e.g. MSI or InnoSetup) &mdash; you just need to zip your program and provide a JSON manifest that describes how to install it.
+If you've built software that you'd like others to use, `scoop` is an alternative to building an installer (e.g. MSI or InnoSetup) &mdash; you just need to zip your program and provide a JSON manifest that describes how to install it.
 
 ### [Documentation](https://github.com/lukesampson/scoop/wiki)
 
@@ -63,11 +63,11 @@ Inspiration
 * [Homebrew](http://mxcl.github.io/homebrew/)
 * [sub](https://github.com/37signals/sub#readme)
 
-What sort of apps can Scoop install?
+What sort of apps can `scoop` install?
 ------------------------------------
 
-The apps that install best with Scoop are commonly called "portable" apps: i.e. compressed program files that run stand-alone when extracted and don't have side-effects like changing the registry or putting files outside the program directory.
+The apps that install best with `scoop` are commonly called "portable" apps: i.e. compressed program files that run stand-alone when extracted and don't have side-effects like changing the registry or putting files outside the program directory.
 
-Since installers are common, Scoop supports them too (and their uninstallers).
+Since installers are common, `scoop` supports them too (and their uninstallers).
 
-Scoop is also great at handling single-file programs and Powershell scripts. These don't even need to be compressed. See the [runat](https://github.com/lukesampson/scoop/blob/master/bucket/runat.json) package for an example: it's really just a GitHub gist.
+`scoop` is also great at handling single-file programs and Powershell scripts. These don't even need to be compressed. See the [runat](https://github.com/lukesampson/scoop/blob/master/bucket/runat.json) package for an example: it's really just a GitHub gist.
