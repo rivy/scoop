@@ -16,9 +16,9 @@
 #     scoop bucket add extras
 param($cmd, $name, $repo)
 
-. "$psscriptroot\..\lib\core.ps1"
-. "$psscriptroot\..\lib\buckets.ps1"
-. "$psscriptroot\..\lib\help.ps1"
+. "$($MyInvocation.MyCommand.Path | Split-Path | Split-Path)\lib\core.ps1"
+. $(rootrelpath "lib\buckets.ps1")
+. $(rootrelpath "lib\help.ps1")
 
 reset_aliases
 

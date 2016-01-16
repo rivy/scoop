@@ -1,7 +1,7 @@
 # for development, update the installed scripts to match local source
-. "$psscriptroot\..\lib\core.ps1"
+. "$($MyInvocation.MyCommand.Path | Split-Path)\..\lib\core.ps1"
 
-$src = relpath ".."
+$src = $(rootrelpath ".")
 $dest = ensure (versiondir 'scoop' 'current')
 
 # make sure not running from the installed directory

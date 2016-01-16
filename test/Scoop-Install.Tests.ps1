@@ -1,8 +1,8 @@
 write-host -f darkyellow "[$(split-path -leaf $MyInvocation.MyCommand.Path)]"
 
-. "$psscriptroot\lib\Scoop-TestLib.ps1"
-. "$psscriptroot\..\lib\core.ps1"
-. "$psscriptroot\..\lib\install.ps1"
+. "$($MyInvocation.MyCommand.Path | Split-Path)\lib\Scoop-TestLib.ps1"
+. "$($MyInvocation.MyCommand.Path | Split-Path | Split-Path)\lib\core.ps1"
+. $(rootrelpath "lib\install.ps1")
 
 describe "travel_dir" {
     beforeall {

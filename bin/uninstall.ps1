@@ -1,9 +1,9 @@
 param($global)
 
-. "$psscriptroot\..\lib\core.ps1"
-. "$psscriptroot\..\lib\install.ps1"
-. "$psscriptroot\..\lib\versions.ps1"
-. "$psscriptroot\..\lib\manifest.ps1"
+. "$($MyInvocation.MyCommand.Path | Split-Path | Split-Path)\lib\core.ps1"
+. $(rootrelpath 'lib\install.ps1')
+. $(rootrelpath 'lib\versions.ps1')
+. $(rootrelpath 'lib\manifest.ps1')
 
 if($global -and !(is_admin)) {
     "ERROR: you need admin rights to uninstall globally"; exit 1

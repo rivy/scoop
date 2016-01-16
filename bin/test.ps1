@@ -1,1 +1,1 @@
-invoke-pester $psscriptroot\..\test
+invoke-pester $($MyInvocation.MyCommand.Path | Split-Path | Split-Path)

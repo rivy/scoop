@@ -2,9 +2,9 @@
 # Summary: Show help for a command
 param($cmd)
 
-. "$psscriptroot\..\lib\core.ps1"
-. "$psscriptroot\..\lib\commands.ps1"
-. "$psscriptroot\..\lib\help.ps1"
+. "$($MyInvocation.MyCommand.Path | Split-Path | Split-Path)\lib\core.ps1"
+. $(rootrelpath "lib\commands.ps1")
+. $(rootrelpath "lib\help.ps1")
 
 reset_aliases
 

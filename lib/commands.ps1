@@ -1,5 +1,5 @@
 function command_files {
-    (get-childitem (relpath '..\libexec')) `
+    (get-childitem $(rootrelpath 'libexec')) `
         + (get-childitem "$scoopdir\shims") `
         | where-object { $_.name -match 'scoop-.*?\.ps1$' }
 }
@@ -13,7 +13,7 @@ function command_name($filename) {
 }
 
 function command_path($cmd) {
-    $cmd_path = relpath "..\libexec\scoop-$cmd.ps1"
+    $cmd_path = $(rootrelpath "libexec\scoop-$cmd.ps1")
 
     # built in commands
     if (!(Test-Path $cmd_path)) {
