@@ -333,7 +333,7 @@ function compute_hash($file, $algname) {
         [string]::join('', $hexbytes)
     } finally {
         $fs.dispose()
-        $alg.dispose()
+        #$alg.dispose()
     }
 }
 
