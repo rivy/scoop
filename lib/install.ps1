@@ -612,21 +612,19 @@ function env_rm_path($manifest, $dir, $global) {
 
 function env_set($manifest, $dir, $global) {
     if($manifest.env_set) {
-        $manifest.env_set | get-member -member noteproperty | foreach-object {
-            $name = $_.name;
-            $val = format $manifest.env_set.$($_.name) @{ "dir" = $dir }
+        $manifest.env_set | where-object { $null -ne $_ } | foreach-object { foreach ($name in $_.keys) {
+            $val = format $manifest.env_set.$($name) @{ "dir" = $dir }
             env $name -t $global $val
             env $name $val
-        }
+        }}
     }
 }
 function env_rm($manifest, $global) {
     if($manifest.env_set) {
-        $manifest.env_set | get-member -member noteproperty | foreach-object {
-            $name = $_.name
+        $manifest.env_set | where-object { $null -ne $_ } | foreach-object { foreach ($name in $_.keys) {
             env $name -t $global $null
             env $name $null
-        }
+        }}
     }
 }
 

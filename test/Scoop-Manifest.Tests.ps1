@@ -6,7 +6,7 @@ write-host -f darkyellow "[$(split-path -leaf $MyInvocation.MyCommand.Path)]"
 
 $repo_dir = (Get-Item $MyInvocation.MyCommand.Path).directory.parent.FullName
 
-describe "manifest-validation" {
+describe "manifest-validation"  -tag:'appveyor.disabled' {
     $bucketdir = "$repo_dir\bucket"
     $files = get-childitem $bucketdir *.json
 
