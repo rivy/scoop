@@ -1,0 +1,3 @@
+# treat third-party tools directory as binary
+*   binary
+.gitattributes !binary

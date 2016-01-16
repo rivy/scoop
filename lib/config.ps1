@@ -32,7 +32,7 @@ function load_cfg {
     if(!(test-path $cfgpath)) { return $null }
 
     try {
-        hashtable ([System.IO.File]::ReadAllText($(resolve-path $cfgpath)) | convertfrom-json -ea stop)
+        hashtable ([System.IO.File]::ReadAllText($(resolve-path $cfgpath)) | convertfrom-jsonNET -ea stop)
     } catch {
         write-host "ERROR loading $cfgpath`: $($_.exception.message)"
     }
@@ -53,7 +53,7 @@ function set_config($name, $val) {
         $cfg.remove($name)
     }
 
-    convertto-json $cfg | out-file $cfgpath -encoding utf8
+    convertto-jsonNET $cfg | out-file $cfgpath -encoding utf8
 }
 
 $cfg = load_cfg

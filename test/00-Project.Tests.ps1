@@ -6,6 +6,7 @@ $repo_files = @( $(Get-ChildItem $repo_dir -recurse -force | where-object { -not
 
 $project_file_exclusions = @(
     $([regex]::Escape($repo_dir.fullname)+'\\.git\\.*$')
+    $([regex]::Escape($repo_dir.fullname)+'\\tools\\.*$')
 )
 
 describe 'Project code' {

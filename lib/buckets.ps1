@@ -9,7 +9,7 @@ function bucketdir($name) {
 function known_bucket_repo($name) {
     $dir = versiondir 'scoop' 'current'
     $json = "$dir\buckets.json"
-    $buckets = [System.IO.File]::ReadAllText($(resolve-path $json)) | convertfrom-json -ea stop
+    $buckets = [System.IO.File]::ReadAllText($(resolve-path $json)) | convertfrom-jsonNET -ea stop
     $buckets.$name
 }
 

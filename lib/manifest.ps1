@@ -7,7 +7,7 @@ function manifest_path($app, $bucket) {
 
 function parse_json($path) {
     if(!(test-path $path)) { return $null }
-    [System.IO.File]::ReadAllText($(resolve-path $path)) | convertfrom-json -ea stop
+    [System.IO.File]::ReadAllText($(resolve-path $path)) | convertfrom-jsonNET -ea stop
 }
 
 function url_manifest($url) {
@@ -20,7 +20,7 @@ function url_manifest($url) {
         throw
     }
     if(!$str) { return $null }
-    $str | convertfrom-json
+    $str | convertfrom-jsonNET
 }
 
 function manifest($app, $bucket, $url) {
@@ -41,7 +41,7 @@ function save_install_info($info, $dir) {
     $nulls = $info.keys | where-object { $null -eq $info[$_] }
     $nulls | foreach-object { $info.remove($_) } # strip null-valued
 
-    $info | convertto-json | out-file "$dir\install.json"
+    $info | convertto-jsonNET | out-file "$dir\install.json"
 }
 
 function install_info($app, $version, $global) {
