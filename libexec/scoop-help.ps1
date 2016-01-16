@@ -9,7 +9,7 @@ param($cmd)
 reset_aliases
 
 function print_help($cmd) {
-    $file = get-content (command_path $cmd) -raw
+    $file = [System.IO.File]::ReadAllText($(resolve-path (command_path $cmd)))
 
     $usage = usage $file
     $summary = summary $file
@@ -24,7 +24,7 @@ function print_summaries {
 
     command_files | foreach-object {
         $command = command_name $_
-        $summary = summary (get-content (command_path $command) -raw)
+        $summary = summary ([System.IO.File]::ReadAllText($(resolve-path (command_path $command))))
         if(!($summary)) { $summary = '' }
         $commands.add("$command ", $summary) # add padding
     }

@@ -7,7 +7,7 @@ function manifest_path($app, $bucket) {
 
 function parse_json($path) {
     if(!(test-path $path)) { return $null }
-    get-content $path -raw | convertfrom-json -ea stop
+    [System.IO.File]::ReadAllText($(resolve-path $path)) | convertfrom-json -ea stop
 }
 
 function url_manifest($url) {
