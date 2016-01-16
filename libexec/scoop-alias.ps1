@@ -73,7 +73,7 @@ function rm_alias($name) {
 function list_aliases {
   $aliases = @{}
   (get_config $script:config_alias).getenumerator() | foreach-object {
-    $summary = summary (get-content (command_path $_.name) -raw)
+    $summary = summary ([System.IO.File]::ReadAllText($(resolve-path (command_path $_.name))))
     if(!($summary)) { $summary = '' }
     $aliases.add("$($_.name) ", $summary)
   }
