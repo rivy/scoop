@@ -6,20 +6,24 @@ Scoop is a command-line installer for Windows.
 #### Requirements
 
 * PowerShell 3+
-* PowerShell script execution policy must configured as either `unrestricted` or `bypass` for your user account (e.g., by using the PowerShell command `set-executionpolicy unrestricted -scope currentuser`)
+* PowerShell script execution policy must configured as either `unrestricted` or `bypass` for your user account
+
+##### PowerShell Execution Policy
+
+Please note that, for operation, `scoop` requires a liberal PowerShell execution policy (in the same manner as [`chocolatey`](https://chocolatey.org)). So, during installation, if the PowerShell execution policy for the current user is more restrictive than `unrestricted` (i.e., `restricted`, `allsigned`, or `remotesigned`), it will be changed to `unrestricted` and saved into the registry as the user's default policy.
 
 #### Installation
 
-To install, paste either of the following set of command strings at the respective shell prompt. Note that if the PowerShell execution policy for the current user is more restrictive than `unrestricted` (i.e., `restricted`, `allsigned`, or `remotesigned`), it will be set to `unrestricted` and saved.
+To install, paste either of the following set of command strings at the respective shell prompt.
 
 ##### CMD Shell &middot; `C:\>`
 
-    powershell -command "'https://raw.github.com/rivy/scoop/master/bin/install.ps1' |%{&$([ScriptBlock]::create((new-object net.webclient).downloadstring($_))) -origin $_}"
+    powershell -command "iex (new-object net.webclient).downloadstring( 'https://raw.github.com/rivy/scoop/master/bin/install.ps1' )"
     set PATH=%PATH%;%LOCALAPPDATA%\scoop\shims
 
 ##### PowerShell &middot; `PS C:\>`
 
-    'https://raw.github.com/rivy/scoop/master/bin/install.ps1' |%{&$([ScriptBlock]::create((new-object net.webclient).downloadstring($_))) -origin $_}
+    iex (new-object net.webclient).downloadstring( 'https://raw.github.com/rivy/scoop/master/bin/install.ps1' )
 
 Once installed, run `scoop help` for instructions.
 

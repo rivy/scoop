@@ -7,12 +7,12 @@ $repo_dir = (Get-Item $MyInvocation.MyCommand.Path).directory.parent.FullName
 describe 'Project origin' {
 
     it 'origin defaults are set (from "lib\core.ps1")' {
-        @($defaults)             | should not BeNullOrEmpty
-        $defaults['repo.domain'] | should not BeNullOrEmpty
-        $defaults['repo.owner']  | should not BeNullOrEmpty
-        $defaults['repo.name']   | should not BeNullOrEmpty
-        $defaults['repo.branch'] | should not BeNullOrEmpty
-        $defaults['repo']        | should not BeNullOrEmpty
+        @($default)             | should not BeNullOrEmpty
+        $default['repo.domain'] | should not BeNullOrEmpty
+        $default['repo.owner']  | should not BeNullOrEmpty
+        $default['repo.name']   | should not BeNullOrEmpty
+        $default['repo.branch'] | should not BeNullOrEmpty
+        $default['repo']        | should not BeNullOrEmpty
     }
 
     $git = try { get-command 'git' -ea stop } catch { $null }
@@ -35,12 +35,12 @@ describe 'Project origin' {
         }
     }
 
-    # it $("origin default branch ('{0}') is either 'master' or '{1}' (current branch)" -f $defaults['repo.branch'], $current_branch) -skip:$(-not $current_branch) {
-    #     $defaults['repo.branch'] | should matchExactly ('master|'+[regex]::escape($current_branch))
+    # it $("origin default branch ('{0}') is either 'master' or '{1}' (current branch)" -f $default['repo.branch'], $current_branch) -skip:$(-not $current_branch) {
+    #     $default['repo.branch'] | should matchExactly ('master|'+[regex]::escape($current_branch))
     # }
 
-    it $("origin default branch ('{0}') is either 'master' or matches as a trial release branch" -f $defaults['repo.branch']) -skip:$(-not $current_branch) {
-        $defaults['repo.branch'] | should matchExactly ('master|(?:trial|tr)-.*')
+    it $("origin default branch ('{0}') is either 'master' or matches as a trial release branch" -f $default['repo.branch']) -skip:$(-not $current_branch) {
+        $default['repo.branch'] | should matchExactly ('master|(?:trial|tr)-.*')
     }
 
     $text = @{}
@@ -52,14 +52,14 @@ describe 'Project origin' {
         $text = $text['README']
         # ex (alt#1): ... 'https://raw.github.com/rivy/scoop/master/bin/install.ps1' |%{&$([ScriptBlock] ...
         $regex = "'" + 'https?://.*?' +
-            [regex]::escape("$($defaults['repo.domain'])/$($defaults['repo.owner'])/$($defaults['repo.name'])/$($defaults['repo.branch'])/bin/install.ps1") +
+            [regex]::escape("$($default['repo.domain'])/$($default['repo.owner'])/$($default['repo.name'])/$($default['repo.branch'])/bin/install.ps1") +
             "'" + '\s*`|\s*\%\s*\{\s*\&\s*\$\s*\(\s*\[\s*(?i:ScriptBlock)\s*\]'
         $m = [regex]::matches($text, $regex)
         if (-not $m.sucess) {
             # ex (alt#2): iex (new-object net.webclient).downloadstring( 'https://raw.github.com/rivy/scoop/master/bin/install.ps1' )
             $regex = 'iex\s+\(\s*new-object\s+net\.webclient\)\.downloadstring\s*\(\s*' +
                 "'" + 'https?://.*?' +
-                [regex]::escape("$($defaults['repo.domain'])/$($defaults['repo.owner'])/$($defaults['repo.name'])/$($defaults['repo.branch'])/bin/install.ps1") +
+                [regex]::escape("$($default['repo.domain'])/$($default['repo.owner'])/$($default['repo.name'])/$($default['repo.branch'])/bin/install.ps1") +
                 "'" + '\s*\)'
             $m = [regex]::matches($text, $regex)
         }
@@ -82,7 +82,7 @@ describe 'Project origin' {
             foreach ($key in $keys)
             {
                 $k = 'repo.' + $key
-                $regex = '(?ms)' + '^\s*\$repo_' + [regex]::escape($key) + '\s*=\s*' + "['`"]" + [regex]::escape($defaults[$k]) + "['`"]" + '\s*$'
+                $regex = '(?ms)' + '^\s*\$repo_' + [regex]::escape($key) + '\s*=\s*' + "['`"]" + [regex]::escape($default[$k]) + "['`"]" + '\s*$'
                 if (-not ([regex]::match($text, $regex).success))
                 {
                     $key
@@ -98,7 +98,7 @@ describe 'Project origin' {
 
     it 'README build status badge matches origin defaults' {
         # ex: https://ci.appveyor.com/api/projects/status/jgckhkhe5rdd6586/branch/master?svg=true
-        $regex = 'https?://ci.appveyor.com/.*?/branch/' + [regex]::escape($defaults['repo.branch'])
+        $regex = 'https?://ci.appveyor.com/.*?/branch/' + [regex]::escape($default['repo.branch'])
         $text = $text['README']
         if (-not ([regex]::match($text, $regex).success))
         {
@@ -122,7 +122,7 @@ describe 'Project origin' {
 
     # release branches == 'master|(?:trial|tr)-.*'
 
-    it 'for an origin release branch ~ README build status badge matches origin default' -skip:$(-not ($defaults['repo.branch'] -match 'master|(?:trial|tr)-.*')) {
+    it 'for an origin release branch ~ README build status badge matches origin default' -skip:$(-not ($default['repo.branch'] -match 'master|(?:trial|tr)-.*')) {
         $text = $text['README']
         # ex (badge): https://ci.appveyor.com/api/projects/status/jgckhkhe5rdd6586/branch/master?svg=true
         $regex = 'https?://ci.appveyor.com/api/projects/status/.*?/branch/(?<branch>[^/?]+)'
@@ -145,7 +145,7 @@ describe 'Project origin' {
                 foreach ($key in $keys)
                 {
                     $k = 'repo.' + $key
-                    if (-not ($defaults[$k] -eq $remote[$key]))
+                    if (-not ($default[$k] -eq $remote[$key]))
                     {
                         $key
                     }
