@@ -5,10 +5,11 @@
 # If used with [query], shows app names that match the query.
 # Without [query], shows all the available apps.
 param($query)
-. "$psscriptroot\..\lib\core.ps1"
-. "$psscriptroot\..\lib\buckets.ps1"
-. "$psscriptroot\..\lib\manifest.ps1"
-. "$psscriptroot\..\lib\versions.ps1"
+
+. "$($MyInvocation.MyCommand.Path | Split-Path | Split-Path)\lib\core.ps1"
+. $(rootrelpath "lib\buckets.ps1")
+. $(rootrelpath "lib\manifest.ps1")
+. $(rootrelpath "lib\versions.ps1")
 
 reset_aliases
 

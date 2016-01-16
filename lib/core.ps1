@@ -1,6 +1,10 @@
 $scoopdir = $env:SCOOP, "~\appdata\local\scoop" | select-object -first 1
 $globaldir = $env:SCOOP_GLOBAL, "$($env:programdata.tolower())\scoop" | select-object -first 1
 
+# projectrootpath will remain $null when core.ps1 is included via the "locationless" initial install script
+$projectrootpath = $null
+if ($MyInvocation.MyCommand.Path) { $projectrootpath = $($MyInvocation.MyCommand.Path | Split-Path | Split-Path) }
+
 $CMDenvpipe = $env:SCOOP__CMDenvpipe
 
 # defaults
@@ -58,7 +62,7 @@ function ensure($dir) { if(!(test-path $dir)) { mkdir $dir > $null }; resolve-pa
 function fullpath($path) { # should be ~ rooted
     $executionContext.sessionState.path.getUnresolvedProviderPathFromPSPath($path)
 }
-function relpath($path) { "$($myinvocation.psscriptroot)\$path" } # relative to calling script
+function rootrelpath($path) { join-path $projectrootpath $path } # relative to project main directory
 function friendly_path($path) {
     $h = $home; if(!$h.endswith('\')) { $h += '\' }
     return "$path" -replace ([regex]::escape($h)), "~\"
@@ -153,7 +157,7 @@ function shim($path, $global, $name, $arg) {
     write-output '# ensure $HOME is set for MSYS programs' | out-file $shim -encoding DEFAULT
     write-output "if(!`$env:home) { `$env:home = `"`$home\`" }" | out-file $shim -encoding DEFAULT -append
     write-output 'if($env:home -eq "\") { $env:home = $env:allusersprofile }' | out-file $shim -encoding DEFAULT -append
-    write-output "`$path = join-path `"`$psscriptroot`" `"$shimdir_relative_path`"" | out-file $shim -encoding DEFAULT -append
+    write-output "`$path = join-path `"`$(`$MyInvocation.MyCommand.Path | Split-Path)`" `"$shimdir_relative_path`"" | out-file $shim -encoding DEFAULT -append
     if($arg) {
         write-output "`$args = '$($arg -join "', '")', `$args" | out-file $shim -encoding DEFAULT -append
     }

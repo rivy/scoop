@@ -1,7 +1,7 @@
 write-host -f darkyellow "[$(split-path -leaf $MyInvocation.MyCommand.Path)]"
 
-. "$psscriptroot\lib\Scoop-TestLib.ps1"
-. "$psscriptroot\..\lib\versions.ps1"
+. "$($MyInvocation.MyCommand.Path | Split-Path)\lib\Scoop-TestLib.ps1"
+. "$($MyInvocation.MyCommand.Path | Split-Path | Split-Path)\lib\versions.ps1"
 
 describe "versions" {
     it 'compares versions with integer-string mismatch' {

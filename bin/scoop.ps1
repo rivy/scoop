@@ -8,11 +8,12 @@ param(
 
 set-strictmode -off
 
-. "$psscriptroot\..\lib\core.ps1"
-. (relpath '..\lib\commands')
-
 $env:SCOOP__updateRestart = $__updateRestart
 $env:SCOOP__CMDenvpipe = $__CMDenvpipe
+$env:SCOOP__rootExecPath = $($MyInvocation.MyCommand.Path | Split-Path)
+
+. "$env:SCOOP__rootExecPath\..\lib\core.ps1"
+. $(rootrelpath 'lib\commands')
 
 reset_aliases
 

@@ -2,8 +2,9 @@
 # Summary: Locate a program path
 # Help: Finds the path to a program that was installed with Scoop
 param($command)
-. "$psscriptroot\..\lib\core.ps1"
-. "$psscriptroot\..\lib\help.ps1"
+
+. "$($MyInvocation.MyCommand.Path | Split-Path | Split-Path)\lib\core.ps1"
+. $(rootrelpath "lib\help.ps1")
 
 reset_aliases
 
