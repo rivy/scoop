@@ -37,8 +37,8 @@ function find_manifest($app, $bucket) {
     }
 
     $buckets = @($null) + @(buckets) # null for main bucket
-    foreach($bucket in $buckets) {
+    if ($null -ne $buckets) { foreach ($bucket in $buckets) {
         $manifest = manifest $app $bucket
         if($manifest) { return $manifest, $bucket }
-    }
+    }}
 }

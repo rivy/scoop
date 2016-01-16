@@ -180,7 +180,7 @@ function dl_urls($app, $version, $manifest, $architecture, $dir, $use_cache = $t
     $extract_tos = @(extract_to $manifest $architecture)
     $extracted = 0;
 
-    foreach($url in $urls) {
+    if ($null -ne $urls) { foreach ($url in $urls) {
         # NOTE: uri/url fragment identifiers are used to optionally specify file type for extraction
         $uri = [System.URI]$url
         $fname = split-path $($uri.LocalPath + $uri.Fragment) -leaf
@@ -250,7 +250,7 @@ function dl_urls($app, $version, $manifest, $architecture, $dir, $use_cache = $t
 
             $extracted++
         }
-    }
+    }}
 
     $fname # returns the last downloaded file
 }
@@ -711,11 +711,11 @@ function failed($app, $global) {
 }
 
 function ensure_none_failed($apps, $global) {
-    foreach($app in $apps) {
+    if ($null -ne $apps) { foreach ($app in $apps) {
         if(failed $app $global) {
             abort "$app install failed previously. please uninstall it and try again."
         }
-    }
+    }}
 }
 
 # travelling directories have their contents moved from

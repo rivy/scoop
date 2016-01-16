@@ -14,13 +14,13 @@ reset_aliases
 
 function bin_match($manifest, $query) {
     if(!$manifest.bin) { return $false }
-    foreach($bin in $manifest.bin) {
+    if ($null -ne $manifest.bin) { foreach($bin in $manifest.bin) {
         $exe, $alias, $args = $bin
         $fname = split-path $exe -leaf -ea stop
 
         if((strip_ext $fname) -match $query) { return $fname }
         if($alias -match $query) { return $alias }
-    }
+    }}
     $false
 }
 
