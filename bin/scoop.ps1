@@ -1,4 +1,4 @@
-#requires -v 3
+#requires -version 2
 param(
     [parameter(mandatory=$false)][int] $__updateRestart = 0,
     [parameter(mandatory=$false)][string] $__CMDenvpipe = $null,
