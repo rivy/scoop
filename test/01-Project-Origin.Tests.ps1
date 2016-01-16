@@ -39,7 +39,7 @@ describe 'Project origin' {
     #     $default['repo.branch'] | should matchExactly ('master|'+[regex]::escape($current_branch))
     # }
 
-    it $("origin default branch ('{0}') is either 'master' or matches as a trial release branch" -f $default['repo.branch']) -skip:$(-not $current_branch) {
+    it $("origin default branch ('{0}') is either 'master' or matches as a trial release branch" -f $default['repo.branch']) {
         $default['repo.branch'] | should matchExactly ('master|(?:trial|tr)-.*')
     }
 
