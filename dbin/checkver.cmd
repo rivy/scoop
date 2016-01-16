@@ -59,13 +59,11 @@ function __MAIN {
 # use $dir to specify a manifest directory to check from, otherwise ./bucket is used
 param($app, $dir)
 
-$PSScriptRoot = [System.IO.FileInfo]::new(${__0}).directory
+. "$([System.IO.FileInfo]::new(${__0}).directory | Split-Path)\lib\core.ps1"
+. $(rootrelpath 'lib\manifest.ps1')
+. $(rootrelpath 'lib\config.ps1')
 
-. "$psscriptroot\..\lib\core.ps1"
-. "$psscriptroot\..\lib\manifest.ps1"
-. "$psscriptroot\..\lib\config.ps1"
-
-if(!$dir) { $dir = "$psscriptroot\..\bucket" }
+if(!$dir) { $dir = $(rootrelpath "bucket") }
 $dir = resolve-path $dir
 
 $search = "*"

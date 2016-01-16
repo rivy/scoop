@@ -1,7 +1,7 @@
 $bucketsdir = "$scoopdir\buckets"
 
 function bucketdir($name) {
-    if(!$name) { return relpath "..\bucket" } # main bucket
+    if(!$name) { return $(rootrelpath "bucket") } # main bucket
 
     "$bucketsdir\$name"
 }

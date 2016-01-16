@@ -1,4 +1,4 @@
-. "$psscriptroot/core.ps1"
+. "$($MyInvocation.MyCommand.Path | Split-Path | Split-Path)\lib\core.ps1"
 
 function manifest_path($app, $bucket) {
 
