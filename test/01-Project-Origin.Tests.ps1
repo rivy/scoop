@@ -112,6 +112,7 @@ describe 'Project origin' {
         }
     }
 
+    $remote = @{}
     $git = try { get-command 'git' -ea stop } catch { $null }
     if ($git) {
         # ref: http://stackoverflow.com/questions/34551805/are-their-names-the-same-a-local-tracking-branch-the-corresponding-remote-trac/34553571#34553571
@@ -130,7 +131,6 @@ describe 'Project origin' {
         }
         if ($null -ne $current_branch) {
             $current_branch_remote = & "git" @('config', '--get', "branch.${current_branch}.remote")
-            $remote = @{}
             if ($null -ne $current_branch_remote) { $remote['url'] = $(& "git" @('config', '--get', "remote.${current_branch_remote}.url")) }
             if ($null -ne $remote['url']) {
                 $m = [regex]::match($remote['url'], '.*?[@/](?<domain>[^/:]+)(?:[/:])(?<owner>.+?)/(?<name>.+?)(?:.git)?$')

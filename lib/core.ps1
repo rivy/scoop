@@ -472,3 +472,111 @@ function app($app) {
     }
     $app, $null
 }
+
+function ConvertFrom-JsonNET {
+    # scratch implementation, based on ideas/concepts from Brian Rogers and bradgonesurfing [1]
+    # [1]: http://stackoverflow.com/questions/5546142/how-do-i-use-json-net-to-deserialize-into-nested-recursive-dictionary-and-list/19140420#19140420
+    [CmdletBinding()]
+    param(
+        [parameter(mandatory=$True, ValueFromPipeline=$True)] [string]$json_string
+        )
+    BEGIN {
+        $json_module_name = 'Newtonsoft.Json'
+        if (-not (Get-Module $json_module_name)) {
+            # load "Newtonsoft.Json.dll" out-of-source to allow self-updates
+            $dir = [System.IO.Path]::Combine([System.IO.Path]::GetTempPath(), 'scoop', [System.Guid]::NewGuid())
+            new-item -itemtype directory -path $dir
+            $filename = [System.IO.Path]::Combine($dir,"$json_module_name.dll")
+            copy-item -force $(resolve-path $(rootrelpath "vendor\Newtonsoft.Json\lib\net20\$json_module_name.dll")) $filename
+            import-module $(resolve-path $filename)
+        }
+        $f_ToObject = { param( $token )
+            $type = $token.psobject.TypeNames -imatch "Newtonsoft\..*(JObject|JArray|JProperty|JValue)"
+            if (-not $type) { $type = "DEFAULT" }
+            #write-debug "ToObject::$($token.psobject.TypeNames)::$type::'$($token.name)'"
+            switch ( $type )
+            {
+                "Newtonsoft.Json.Linq.JObject"
+                    {
+                    #write-debug "object::$($token.psobject.TypeNames)::'$($token.name)'=$($token.value)"
+                    $children = $token.children()
+                    $h = @{}
+                    $children | ForEach-Object {
+                        #write-debug "object/child::$($_.psobject.TypeNames)::'$($_.name)'[$($_.count)]"
+                        if ($_.psobject.TypeNames -imatch "Newtonsoft\..*(JValue)") {
+                            $h[$token.name] = $_.value
+                            }
+                        else { $h[$_.name] = $(& $f_ToObject $_.first) }
+                        }
+                    ,$h
+                    break
+                    }
+                "Newtonsoft.Json.Linq.JArray"
+                    {
+                    #write-debug "array::$($token.psobject.TypeNames)::'$($token.name)'=$($token.value)"
+                    $a = @()
+                    $token | ForEach-Object {
+                        #write-debug "array/token::$($_.psobject.TypeNames)::'$($_.name)'=$($_.value)"
+                        if ($_.psobject.TypeNames -imatch "Newtonsoft\..*(JValue)") {
+                            $a += , $_.value
+                            }
+                        else { $a += , $(& $f_ToObject $_) }
+                        }
+                    ,$a
+                    break
+                    }
+                default
+                    {
+                    #write-debug "default::$($token.psobject.TypeNames)::'$($token.name)'=$($token.value)"
+                    $token.value
+                    break
+                    }
+            }
+        }
+    }
+    PROCESS {
+        $p = [Newtonsoft.Json.Linq.JToken]::Parse( $json_string )
+        # NOTE: PowerShell v3+ `ConvertFrom-Json` returns a "PSCustomObject"; avoided here because "PSCustomObject" re-serializes incorrectly
+        $o = ,$(& $f_ToObject $p)
+        [object]$o  ## returns "System.Array", "System.Collections.Hashtable", or basic type
+    }
+    END {}
+}
+
+function ConvertTo-JsonNET {
+    [CmdletBinding()]
+    param(
+        [parameter(mandatory=$True, ValueFromPipeline=$True)][object] $object,
+        [parameter(mandatory=$False)][int] $indentation = 4  ## <0 .. no indentation; >=0 set indentation and indented format; default = 4; NOTE: [int]$null => 0
+        )
+    BEGIN {
+        $json_module_name = 'Newtonsoft.Json'
+        if (-not (Get-Module $json_module_name)) {
+            # load "Newtonsoft.Json.dll" out-of-source to allow self-updates
+            $dir = [System.IO.Path]::Combine([System.IO.Path]::GetTempPath(), 'scoop', [System.Guid]::NewGuid())
+            new-item -itemtype directory -path $dir
+            $filename = [System.IO.Path]::Combine($dir,"$json_module_name.dll")
+            copy-item -force $(resolve-path $(rootrelpath "vendor\Newtonsoft.Json\lib\net20\$json_module_name.dll")) $filename
+            import-module $(resolve-path $filename)
+        }
+        $list = New-Object System.Collections.Generic.List[object]
+    }
+    PROCESS {
+        $list.add($object)
+    }
+    END {
+        if ($list.count -eq 1) { $list = $list | select-object -first 1 }
+        # [Newtonsoft.Json.JsonConvert]::SerializeObject( $list )   ## simpler implementation, but lacks formatting options
+        # NOTE: indentation == 4 => output equivalent to ConvertTo-Json()
+        $sb = New-Object System.Text.StringBuilder
+        $sw = New-Object System.IO.StringWriter($sb)
+        $writer = New-Object Newtonsoft.Json.JsonTextWriter($sw)
+        if ($indentation -ge 0) {
+            $writer.Formatting = [Newtonsoft.Json.Formatting]::Indented     ## indented + multiline
+            $writer.Indentation = $indentation
+        }
+        $s = New-Object Newtonsoft.Json.JsonSerializer
+        $s.Serialize( $writer, $list )
+        $sw.ToString()
+    }
+}

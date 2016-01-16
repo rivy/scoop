@@ -217,3 +217,100 @@ describe 'app' {
         $bucket | should be "test-bucket"
     }
 }
+
+# NOTE: the comma operator may be used to block array unrolling by PowerShell
+
+describe "ConfigFrom-JsonNET" {
+    it "ensures the Newtonsoft.Json module is loaded" {
+        $o = convertfrom-jsonNET 'true'
+        get-module 'Newtonsoft.Json' | should be $true # $true locally, fails on appveyor
+    }
+
+    $module_version = "$($(get-module 'Newtonsoft.Json').version)"
+    it $("ensures the Newtonsoft.Json version ('{0}') is as expected" -f $module_version) {
+        $module_version | should be '8.0.0.0'
+    }
+
+    it "correctly converts simple cases to objects" {
+        $o = convertfrom-jsonNET 'true'
+        $o.GetType().name | should be 'Boolean'
+        $o | should be $true
+
+        $o = convertfrom-jsonNET '1'
+        $o.GetType().name | should match '^Int\d*$'
+        $o | should be 1
+
+        $o = ,$(convertfrom-jsonNET '[]')
+        $o.GetType().name | should be 'Object[]'
+        $o.count | should be 1
+
+        $o = convertfrom-jsonNET '[1]'
+        $o.GetType().name | should be 'Object[]'
+        $o.count | should be 1
+        $o[0] | should be 1
+
+        $o = convertfrom-jsonNET '[1,2]'
+        $o.GetType().name | should be 'Object[]'
+        $o.count | should be 2
+        $o[0] | should be 1
+        $o[1] | should be 2
+    }
+}
+
+describe "ConfigFrom-JsonNET (hash tests/appveyor fails)" {
+    it "correctly converts properties to simple hashtables" {
+        $o = convertfrom-jsonNET '{}'
+        $o.psobject.TypeNames[0] | should be 'System.Collections.Hashtable'
+        $o.count | should be 0
+        $o.keys.count | should be 0
+
+        $o = convertfrom-jsonNET '{1:2}'
+        $o.psobject.TypeNames[0] | should be 'System.Collections.Hashtable'
+        $o.count | should be 1
+        $o.keys.count | should be 1
+        $o.'1' | should be 2
+    }
+
+    $json = '{ "one": 1, "two": [ { "a": "a" }, "b", 2 ], "three": { "four": 4 } }'
+
+    it "converts json to hashtable" {
+        $ht = ,$(convertfrom-jsonNET $json)
+
+        $ht.one | should beexactly 1
+        $ht.two[0].a | should be "a"
+        $ht.two[1] | should be "b"
+        $ht.two[2] | should beexactly 2
+        $ht.three.four | should beexactly 4
+    }
+}
+
+describe "ConfigTo-JsonNET" {
+    # NOTE: only simple cases as generated json strings have unordered properties, making matching problematic
+
+    it "correctly converts simple cases to json strings" {
+        convertTo-jsonNET @() -indentation -1 | should beexactly '[]'
+        convertTo-jsonNET @{} -indentation -1 | should beexactly '{}'
+        convertTo-jsonNET   1 -indentation -1 | should beexactly '1'
+        convertTo-jsonNET "a" -indentation -1 | should beexactly '"a"'
+
+        convertTo-jsonNET @(1)   -indentation -1 | should beexactly '[1]'
+        convertTo-jsonNET @(1,2) -indentation -1 | should beexactly '[1,2]'
+        convertTo-jsonNET @{1=2} -indentation -1 | should beexactly '{"1":2}'
+    }
+}
+
+describe "Config*-JsonNET" -tag 'appveyor.disabled' {
+    $json = '{ "one": 1, "two": [ { "a": "a" }, "b", 2 ], "three": { "four": 4 } }'
+
+    it "conversions are reversible" {
+        # NOTE: as written, this test may correctly fail
+        #   ... json properties are unordered and may shift within equivalent json strings
+        #   ... an initial conversion gives a more reliable target for testing equivalency
+        #   ... but *not* guaranteed; a sorted json output would be needed for a guarantee
+
+        $target_json = convertto-jsonNET $(convertfrom-jsonNET $json) -indentation -1
+        $original_json = $target_json
+
+        $original_json | convertfrom-jsonNET | convertTo-jsonNET -indentation -1 | should beexactly $target_json
+    }
+}
