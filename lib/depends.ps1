@@ -1,12 +1,13 @@
 # resolve dependencies for the supplied apps, and sort into the correct order
 function install_order($apps, $arch) {
     $res = @()
-    foreach($app in $apps) {
-        foreach($dep in deps $app $arch) {
+    if ($null -ne $apps) { foreach ($app in $apps) {
+        $deps = @( deps $app $arch )
+        if ($null -ne $deps) { foreach($dep in $deps) {
             if($res -notcontains $dep) { $res += $dep}
-        }
+        }}
         if($res -notcontains $app) { $res += $app }
-    }
+    }}
     return $res
 }
 
@@ -27,14 +28,14 @@ function dep_resolve($app, $arch, $resolved, $unresolved) {
 
     $deps = @(install_deps $manifest $arch) + @(runtime_deps $manifest) | select-object -uniq
 
-    foreach($dep in $deps) {
+    if ($null -ne $deps) { foreach($dep in $deps) {
         if($resolved -notcontains $dep) {
             if($unresolved -contains $dep) {
                 abort "circular dependency detected: $app -> $dep"
             }
             dep_resolve $dep $arch $resolved $unresolved
         }
-    }
+    }}
     $resolved.add($app) > $null
     $unresolved = $unresolved -ne $app # remove from unresolved
 }

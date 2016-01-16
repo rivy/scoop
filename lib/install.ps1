@@ -671,11 +671,11 @@ function failed($app, $global) {
 }
 
 function ensure_none_failed($apps, $global) {
-    foreach($app in $apps) {
+    if ($null -ne $apps) { foreach ($app in $apps) {
         if(failed $app $global) {
             abort "$app install failed previously. please uninstall it and try again."
         }
-    }
+    }}
 }
 
 # travelling directories have their contents moved from
