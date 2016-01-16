@@ -413,7 +413,7 @@ function install_msi($fname, $dir, $msi) {
     if($msi.silent) { $arg += '/qn', 'ALLUSERS=2', 'MSIINSTALLPERUSER=1' }
     else { $arg += '/qb-!' }
 
-    $continue_exit_codes = @{ 3010 = "a restart is required to complete installation" }
+    $continue_exit_codes = @{ '3010' = "a restart is required to complete installation" }
 
     $installed = run 'msiexec' $arg "running installer..." $continue_exit_codes
     if(!$installed) {
@@ -483,8 +483,8 @@ function run_uninstaller($manifest, $architecture, $dir) {
                 $arg += '/qb-!'
             }
 
-            $continue_exit_codes.1605 = 'not installed, skipping'
-            $continue_exit_codes.3010 = 'restart required'
+            $continue_exit_codes.'1605' = 'not installed, skipping'
+            $continue_exit_codes.'3010' = 'restart required'
         } elseif($uninstaller) {
             $exe = "$dir\$($uninstaller.file)"
             $arg = args $uninstaller.args
