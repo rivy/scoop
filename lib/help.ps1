@@ -12,5 +12,5 @@ function help($text) {
 }
 
 function my_usage { # gets usage for the calling script
-    usage (get-content $myInvocation.PSCommandPath -raw)
+    usage ([System.IO.File]::ReadAllText($(resolve-path $myInvocation.PSCommandPath)))
 }
