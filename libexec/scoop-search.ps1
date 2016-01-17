@@ -29,13 +29,20 @@ function search_bucket($bucket, $query) {
         @{ name = $_ }
     }
 
-    if($query) { $apps = $apps | where-object {
-        if($_.name -match $query) { return $true }
-        $bin = bin_match (manifest $_.name $bucket) $query
-        if($bin) {
-            $_.bin = $bin; return $true;
+    if($query) {
+        try {
+            $query = new-object regex $query
+        } catch {
+            abort "invalid regular expression: $($_.exception.innerexception.message)"
         }
-    } }
+        $apps = $apps | where-object {
+            if($_.name -match $query) { return $true }
+            $bin = bin_match (manifest $_.name $bucket) $query
+            if($bin) {
+                $_.bin = $bin; return $true;
+            }
+        }
+    }
     $apps | foreach-object { $_.version = (latest_version $_.name $bucket); $_ }
 }
 
