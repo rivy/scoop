@@ -13,7 +13,7 @@ $default = @{}
 $default['repo.domain'] = 'github.com'
 $default['repo.owner'] = 'rivy'
 $default['repo.name'] = 'scoop'
-$default['repo.branch'] = 'master'
+$default['repo.branch'] = 'tr-xp'
 $default['repo'] = "https://$($default['repo.domain'])/$($default['repo.owner'])/$($default['repo.name'])"
 
 # helper functions
