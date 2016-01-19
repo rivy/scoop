@@ -232,9 +232,7 @@ describe "ConfigFrom-JsonNET" {
         $o[0] | should be 1
         $o[1] | should be 2
     }
-}
 
-describe "ConfigFrom-JsonNET (hash tests/appveyor fails)" {
     it "correctly converts properties to simple hashtables" {
         $o = convertfrom-jsonNET '{}'
         $o.psobject.TypeNames[0] | should be 'System.Collections.Hashtable'
@@ -276,7 +274,7 @@ describe "ConfigTo-JsonNET" {
     }
 }
 
-describe "Config*-JsonNET" -tag 'appveyor.disabled' {
+describe "Config*-JsonNET" {
     $json = '{ "one": 1, "two": [ { "a": "a" }, "b", 2 ], "three": { "four": 4 } }'
 
     it "conversions are reversible" {
