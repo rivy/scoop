@@ -45,8 +45,8 @@ function update_scoop() {
     $hash_original = ""
     if(!(test-path "$currentdir\.git")) {
         # load defaults
-        $repo = $defaults['repo']
-        $branch = $defaults['repo.branch']
+        $repo = $default['repo']
+        $branch = $default['repo.branch']
 
         # remove non-git scoop
         remove-item -r -force $currentdir -ea stop
