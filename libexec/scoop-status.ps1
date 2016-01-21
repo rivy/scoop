@@ -14,10 +14,11 @@ reset_aliases
 $currentdir = fullpath $(versiondir 'scoop' 'current')
 $needs_update = $false
 
-if(test-path "$currentdir\.git") {
+if ((test-path "$currentdir\.git") -and $(try { get-command 'git' -ea stop } catch { $false })) {
     push-location $currentdir
-    git fetch -q origin
-    $commits = $(git log "HEAD..origin/$(scoop config SCOOP_BRANCH)" --oneline)
+    $current_branch = & "git" @('rev-parse', '--abbrev-ref', 'HEAD', '--') 2>$null
+    $null = & "git" @('fetch', '-q',  'origin') 2>$null
+    $commits = & "git" @('log', "HEAD..origin/$current_branch", '--oneline') 2>$null
     if($commits) { $needs_update = $true }
     pop-location
 }
