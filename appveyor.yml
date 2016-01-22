@@ -13,6 +13,7 @@ init:
 build: off
 
 test_script:
+  - ps: $env:TEST_ALL = $true
   - ps: powershell -c "invoke-pester -quiet -script .\test -excludetag disabled,appveyor.disabled -outputfile '.\test\#TestResults.xml' -outputformat NUnitXML" | out-null
   - ps: $env:failedcount = $([xml]$(get-content '.\test\#TestResults.xml')).'test-results'.'failures'
   - ps: .\test\bin\summarize-results.ps1 '.\test\#TestResults.xml'

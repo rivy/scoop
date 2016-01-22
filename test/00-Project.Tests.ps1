@@ -72,6 +72,35 @@ describe 'Project code' {
         }
     }
 
+    $lint_module_name = 'PSScriptAnalyzer'
+    $lint_module_version = '1.3.0'
+    if (-not (Get-Module $lint_module_name)) {
+        $filename = [System.IO.Path]::Combine($repo_dir,"tools\$lint_module_name\$lint_module_version\$lint_module_name.psd1")
+        import-module $(resolve-path $filename)
+    }
+    $have_delinter = Get-Module $lint_module_name
+
+    $it_desc = 'PowerShell code files are de-linted'
+    $skip = -not $env:TEST_ALL
+    if ($skip) { $it_desc += ' [to run: `$env:TEST_ALL = $true`]' }
+    it $it_desc -skip:$($skip -or -not $files_exist -or -not $have_delinter) {
+        $rule_exclusions = @( 'PSAvoidUsingWriteHost' )
+        $badFiles = @(
+            foreach ($file in $files)
+            {
+                if ( (Invoke-ScriptAnalyzer $file.FullName -excluderule $rule_exclusions).count )
+                {
+                    $file.FullName
+                }
+            }
+        )
+
+        if ($badFiles.Count -gt 0)
+        {
+            throw "The following files have lint warnings/errors:`n`n$($badFiles -join "`n")"
+        }
+    }
+
 }
 
 describe 'Style constraints for non-binary project files' {
