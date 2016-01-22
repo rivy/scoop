@@ -121,8 +121,8 @@ function dl_progress($url, $to, $cookies) {
 
     $left = [console]::cursorleft
     $top = [console]::cursortop
-    register-objectevent $wc downloadprogresschanged progress | out-null
-    register-objectevent $wc downloadfilecompleted complete | out-null
+    register-objectevent $wc -sourceid downloadprogresschanged -eventname progress | out-null
+    register-objectevent $wc -sourceid downloadfilecompleted -eventname complete | out-null
     try {
         $wc.downloadfileasync($url, $to)
 
@@ -429,7 +429,7 @@ function extract_msi($path, $to) {
 }
 
 function extract_lessmsi($path, $to) {
-    iex "lessmsi x `"$path`" `"$to\`""
+    & 'lessmsi' @( 'x', $path, $to )
 }
 
 # deprecated
