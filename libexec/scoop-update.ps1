@@ -38,8 +38,6 @@ function update_scoop() {
     $git = try { get-command git -ea stop } catch { $null }
     if(!$git) { abort "scoop uses git to update itself. run 'scoop install git'." }
 
-    $update_commit_target = 'FETCH_HEAD'  # or, for a complete reset, use "origin/HEAD"
-
     "updating scoop..."
     $currentdir = fullpath $(versiondir 'scoop' 'current')
     $hash_original = ""
@@ -52,18 +50,31 @@ function update_scoop() {
         remove-item -r -force $currentdir -ea stop
 
         # get git scoop
-        git clone -q $repo --branch $branch --single-branch $currentdir
+        $null = & 'git' @( 'clone', '-q', $repo, '--branch', $branch, '--single-branch', $currentdir ) 2>$null
     }
     else {
         push-location $currentdir
-        $hash_original = git describe --all --long
-        git fetch --quiet
-        git reset --quiet --hard $update_commit_target
-        git clean -fd
+        $current_branch = & 'git' @('rev-parse', '--abbrev-ref', 'HEAD') 2>$null
+        if ($current_branch -eq 'HEAD') {
+            $current_branch = $null
+            # detached HEAD ~ fallback to using for-each-ref/merge-base     ## AppVeyor may test in detached head state from the downloaded branch
+            # git >= v2.7.0 ... $b = $(git for-each-ref --count=1 --contains HEAD --sort=-committerdate refs/heads --format=%(refname)) -replace '^refs/heads/', ''
+            # ref: http://stackoverflow.com/questions/24993772/how-to-find-all-refs-that-contain-a-commit-in-their-history-in-git/24994211#24994211
+            $heads = @( & 'git' @('for-each-ref', '--sort=-committerdate', 'refs/heads', '--format=%(refname)') 2>$null )
+            if ($null -ne $heads) { foreach ($head in $heads) {
+                if ( $(& 'git' @('merge-base', '--is-ancestor', 'HEAD', $head) 2>$null ; $LASTEXITCODE -eq 0) ) { $current_branch = $head -replace '^refs/heads/', '' }
+            }}
+        }
+        $update_commit_target = $current_branch
+        if (-not $update_commit_target) { $update_commit_target = 'origin/HEAD' } # complete reset to well-known target; alternatively, use "FETCH_HEAD" to use branch tip of fetched content
+        $hash_original = & 'git' @( 'describe', '--all', '--long' ) 2>$null
+        $null = & 'git' @( 'fetch', '--quiet' ) 2>$null
+        $null = & 'git' @( 'reset', '--quiet', '--hard', $update_commit_target ) 2>$null
+        $null = & 'git' @( 'clean', '-fd' ) 2>$null
         pop-location
     }
     push-location $currentdir
-    $hash_new = git describe --all --long
+    $hash_new = & 'git' @( 'describe', '--all', '--long' ) 2>$null
     pop-location
     if ( $hash_new -ne $hash_original ) {
         $max_restarts = 1
@@ -83,9 +94,22 @@ function update_scoop() {
     @(buckets) | foreach-object {
         "updating $_ bucket..."
         push-location (bucketdir $_)
-        git fetch --quiet
-        git reset --quiet --hard $update_commit_target
-        git clean -fd
+        $current_branch = & 'git' @('rev-parse', '--abbrev-ref', 'HEAD') 2>$null
+        if ($current_branch -eq 'HEAD') {
+            $current_branch = $null
+            # detached HEAD ~ fallback to using for-each-ref/merge-base     ## AppVeyor may test in detached head state from the downloaded branch
+            # git >= v2.7.0 ... $b = $(git for-each-ref --count=1 --contains HEAD --sort=-committerdate refs/heads --format=%(refname)) -replace '^refs/heads/', ''
+            # ref: http://stackoverflow.com/questions/24993772/how-to-find-all-refs-that-contain-a-commit-in-their-history-in-git/24994211#24994211
+            $heads = @( & 'git' @('for-each-ref', '--sort=-committerdate', 'refs/heads', '--format=%(refname)') 2>$null )
+            if ($null -ne $heads) { foreach ($head in $heads) {
+                if ( $(& 'git' @('merge-base', '--is-ancestor', 'HEAD', $head) 2>$null ; $LASTEXITCODE -eq 0) ) { $current_branch = $head -replace '^refs/heads/', '' }
+            }}
+        }
+        $update_commit_target = $current_branch
+        if (-not $update_commit_target) { $update_commit_target = 'origin/HEAD' } # complete reset to well-known target; alternatively, use "FETCH_HEAD" to use branch tip of fetched content
+        $null = & 'git' @( 'fetch', '--quiet' ) 2>$null
+        $null = & 'git' @( 'reset', '--quiet', '--hard', $update_commit_target ) 2>$null
+        $null = & 'git' @( 'clean', '-fd' ) 2>$null
         pop-location
     }
     success 'scoop was updated successfully!'
