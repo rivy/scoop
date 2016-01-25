@@ -10,9 +10,9 @@ function requires_lessmsi ($manifest, $architecture) {
     $useLessMsi = get_config MSIEXTRACT_USE_LESSMSI
     if (!$useLessMsi) { return $false }
 
-    $(url $manifest $architecture |? {
+    $(url $manifest $architecture | where-object {
         $_ -match '\.(msi)$'
-    } | measure | select -exp count) -gt 0
+    } | measure-object | select-object -exp count) -gt 0
 }
 
 function file_requires_7zip($fname) {
