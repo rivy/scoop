@@ -38,7 +38,7 @@ function update_scoop() {
     $git = try { get-command git -ea stop } catch { $null }
     if(!$git) { abort "scoop uses git to update itself. run 'scoop install git'." }
 
-    "updating scoop..."
+    write-host -nonewline "updating scoop..."
     $currentdir = fullpath $(versiondir 'scoop' 'current')
     $hash_original = ""
     if(!(test-path "$currentdir\.git")) {
@@ -54,65 +54,101 @@ function update_scoop() {
     }
     else {
         push-location $currentdir
+        $hash_original = & 'git' @( 'describe', '--all', '--always', '--long' ) 2>$null
         $current_branch = & 'git' @('rev-parse', '--abbrev-ref', 'HEAD') 2>$null
         if ($current_branch -eq 'HEAD') {
+            # detached HEAD ~ fallback to using for-each-ref/merge-base
             $current_branch = $null
-            # detached HEAD ~ fallback to using for-each-ref/merge-base     ## AppVeyor may test in detached head state from the downloaded branch
+            # find most-recently active branch which is an ancestor of the current commit and has an upstream reference
             # git >= v2.7.0 ... $b = $(git for-each-ref --count=1 --contains HEAD --sort=-committerdate refs/heads --format=%(refname)) -replace '^refs/heads/', ''
             # ref: http://stackoverflow.com/questions/24993772/how-to-find-all-refs-that-contain-a-commit-in-their-history-in-git/24994211#24994211
             $heads = @( & 'git' @('for-each-ref', '--sort=-committerdate', 'refs/heads', '--format=%(refname)') 2>$null )
             if ($null -ne $heads) { foreach ($head in $heads) {
                 if ( $(& 'git' @('merge-base', '--is-ancestor', 'HEAD', $head) 2>$null ; $LASTEXITCODE -eq 0) ) { $current_branch = $head -replace '^refs/heads/', '' }
+                if ( $(& 'git' @('rev-parse', '--abbrev-ref', "$current_branch@{upstream}" ) 2>$null ; $LASTEXITCODE -eq 0) ) { break }
             }}
+            if (($null -eq $current_branch) -and ( $(& 'git' @('rev-parse', '--abbrev-ref', "master@{upstream}" ) 2>$null ; $LASTEXITCODE -eq 0) )) { $current_branch = 'master' } ## last ditch default
+            if ($null -ne $current_branch) {
+                # save reference to current commit
+                $save_name = 'update/stashed-' + $(& 'git' @( 'rev-parse', '--short=16', 'HEAD' ) 2>$null)
+                $null = & 'git' @( 'branch', '--force', $save_name ) 2>$null
+                #
+                warn "update:(scoop): using best-guess branch ('$current_branch') for update; prior revision saved as branch '$save_name'"
+            }
         }
-        $update_commit_target = $current_branch
-        if (-not $update_commit_target) { $update_commit_target = 'origin/HEAD' } # complete reset to well-known target; alternatively, use "FETCH_HEAD" to use branch tip of fetched content
-        $hash_original = & 'git' @( 'describe', '--all', '--long' ) 2>$null
-        $null = & 'git' @( 'fetch', '--quiet' ) 2>$null
-        $null = & 'git' @( 'reset', '--quiet', '--hard', $update_commit_target ) 2>$null
-        $null = & 'git' @( 'clean', '-fd' ) 2>$null
+        $upstream_ref = & 'git' @('rev-parse', '--abbrev-ref', "$current_branch@{upstream}" ) 2>$null
+        if ($null -eq $upstream_ref) {
+            warn 'update:(scoop): unable to find an upstream reference; you may need to reinstall "scoop"'
+        } else {
+            $null = & 'git' @( 'checkout', '--quiet', '--force', $current_branch ) 2>$null
+            $null = & 'git' @( 'fetch', '--quiet' ) 2>$null
+            $null = & 'git' @( 'checkout', '--quiet', '--force', $upstream_ref ) 2>$null
+            $null = & 'git' @( 'clean', '-fd' ) 2>$null
+            $null = & 'git' @( 'branch', '--quiet', '--force', $current_branch ) 2>$null
+            $null = & 'git' @( 'checkout', '--quiet', '--force', $current_branch ) 2>$null
+        }
         pop-location
     }
     push-location $currentdir
-    $hash_new = & 'git' @( 'describe', '--all', '--long' ) 2>$null
+    $hash_new = & 'git' @( 'describe', '--all', '--always', '--long' ) 2>$null
     pop-location
     if ( $hash_new -ne $hash_original ) {
         $max_restarts = 1
         if ( $update_restart -gt $max_restarts ) {
-            warn "scoop code was changed, please re-run 'scoop update'"
+            warn "update: scoop code was changed, please re-run 'scoop update'"
         }
         else {
-            write-host "scoop code was changed, restarting update..."
+            write-host "update: scoop code was changed, restarting update..."
             & "$psscriptroot\..\bin\scoop.ps1" update -__updateRestart $($update_restart + 1) $args_initial
             exit $lastExitCode
         }
-    }
+    } elseif ( $update_restart -gt 0 ) { success 'updated' } else { write-host '(no changes)'}
 
     ensure_scoop_in_path $false
     shim "$currentdir\bin\scoop.ps1" $false
 
     @(buckets) | foreach-object {
-        "updating $_ bucket..."
+        write-host -nonewline "updating $_ bucket..."
+        $changed = $false
         push-location (bucketdir $_)
+        $hash_original = & 'git' @( 'describe', '--all', '--always', '--long' ) 2>$null
         $current_branch = & 'git' @('rev-parse', '--abbrev-ref', 'HEAD') 2>$null
         if ($current_branch -eq 'HEAD') {
+            # detached HEAD ~ fallback to using for-each-ref/merge-base
             $current_branch = $null
-            # detached HEAD ~ fallback to using for-each-ref/merge-base     ## AppVeyor may test in detached head state from the downloaded branch
+            # find most-recently active branch which is an ancestor of the current commit and has an upstream reference
             # git >= v2.7.0 ... $b = $(git for-each-ref --count=1 --contains HEAD --sort=-committerdate refs/heads --format=%(refname)) -replace '^refs/heads/', ''
             # ref: http://stackoverflow.com/questions/24993772/how-to-find-all-refs-that-contain-a-commit-in-their-history-in-git/24994211#24994211
             $heads = @( & 'git' @('for-each-ref', '--sort=-committerdate', 'refs/heads', '--format=%(refname)') 2>$null )
             if ($null -ne $heads) { foreach ($head in $heads) {
                 if ( $(& 'git' @('merge-base', '--is-ancestor', 'HEAD', $head) 2>$null ; $LASTEXITCODE -eq 0) ) { $current_branch = $head -replace '^refs/heads/', '' }
+                if ( $(& 'git' @('rev-parse', '--abbrev-ref', "$current_branch@{upstream}" ) 2>$null ; $LASTEXITCODE -eq 0) ) { break }
             }}
+            if (($null -eq $current_branch) -and ( $(& 'git' @('rev-parse', '--abbrev-ref', "master@{upstream}" ) 2>$null ; $LASTEXITCODE -eq 0) )) { $current_branch = 'master' } ## last ditch default
+            if ($null -ne $current_branch) {
+                # save reference to current commit
+                $save_name = 'update/stashed-' + $(& 'git' @( 'rev-parse', '--short=16', 'HEAD' ) 2>$null)
+                $null = & 'git' @( 'branch', '--force', $save_name ) 2>$null
+                #
+                warn "update:(bucket[$_]): using best-guess branch ('$current_branch') for update; prior revision saved as branch '$save_name'"
+            }
         }
-        $update_commit_target = $current_branch
-        if (-not $update_commit_target) { $update_commit_target = 'origin/HEAD' } # complete reset to well-known target; alternatively, use "FETCH_HEAD" to use branch tip of fetched content
-        $null = & 'git' @( 'fetch', '--quiet' ) 2>$null
-        $null = & 'git' @( 'reset', '--quiet', '--hard', $update_commit_target ) 2>$null
-        $null = & 'git' @( 'clean', '-fd' ) 2>$null
+        $upstream_ref = & 'git' @('rev-parse', '--abbrev-ref', "$current_branch@{upstream}" ) 2>$null
+        if ($null -eq $upstream_ref) {
+            warn "update:(bucket[$_]): unable to find an upstream reference; you may need to reinstall bucket '$_'"
+        } else {
+            $null = & 'git' @( 'checkout', '--quiet', '--force', $current_branch ) 2>$null
+            $null = & 'git' @( 'fetch', '--quiet' ) 2>$null
+            $null = & 'git' @( 'checkout', '--quiet', '--force', $upstream_ref ) 2>$null
+            $null = & 'git' @( 'clean', '-fd' ) 2>$null
+            $null = & 'git' @( 'branch', '--quiet', '--force', $current_branch ) 2>$null
+            $null = & 'git' @( 'checkout', '--quiet', '--force', $current_branch ) 2>$null
+            $hash_new = & 'git' @( 'describe', '--all', '--always', '--long' ) 2>$null
+            $changed = ($hash_new -ne $hash_original)
+        }
         pop-location
+        if ($changed) { success "updated" } else { write-output '(no changes)' }
     }
-    success 'scoop was updated successfully!'
 }
 
 function update($app, $global, $quiet = $false) {
