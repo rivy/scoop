@@ -581,7 +581,7 @@ function find_dir_or_subdir($path, $dir) {
 }
 
 function env_add_path($manifest, $dir, $global) {
-    $manifest.env_add_path | where-object { $_ } | foreach-object {
+    $manifest.env_add_path | where-object { $null -ne $_ } | foreach-object {
         $path_dir = "$dir\$($_)"
         if(!(is_in_dir $dir $path_dir)) {
             abort "error in manifest: env_add_path '$_' is outside the app directory"
@@ -604,7 +604,7 @@ function add_first_in_path($dir, $global) {
 
 function env_rm_path($manifest, $dir, $global) {
     # remove from path
-    $manifest.env_add_path | where-object { $_ } | foreach-object {
+    $manifest.env_add_path | where-object { $null -ne $_ } | foreach-object {
         $path_dir = "$dir\$($_)"
         remove_from_path $path_dir $global
     }
@@ -631,14 +631,14 @@ function env_rm($manifest, $global) {
 }
 
 function pre_install($manifest) {
-    $manifest.pre_install | where-object { $_ } | foreach-object {
+    $manifest.pre_install | where-object { $null -eq $_ } | foreach-object {
         write-output "running pre-install script..."
         & $( [ScriptBlock]::Create($_) ) ## aka: invoke-expression $_
     }
 }
 
 function post_install($manifest) {
-    $manifest.post_install | where-object { $_ } | foreach-object {
+    $manifest.post_install | where-object { $null -eq $_ } | foreach-object {
         write-output "running post-install script..."
         & $( [ScriptBlock]::Create($_) ) ## aka: invoke-expression $_
     }
