@@ -444,7 +444,7 @@ function reset_aliases() {
 function CMD_SET_encode_arg {
     # CMD_SET_encode_arg( @ )
     # encode string(s) to equivalent CMD command line interpretable version(s) as arguments for SET
-    if ($args -ne $null) {
+    if ($null -ne $args) {
         $args | ForEach-Object {
             $val = $_
             $val = $($val -replace '\^','^^')

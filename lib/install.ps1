@@ -283,7 +283,7 @@ function is_in_dir($dir, $check) {
 
 # hashes
 function hash_for_url($manifest, $url, $arch) {
-    $hashes = @(hash $manifest $arch) | where-object { $_ -ne $null };
+    $hashes = @(hash $manifest $arch) | where-object { $null -ne $_ };
 
     if($hashes.length -eq 0) { return $null }
 
@@ -509,7 +509,7 @@ function shim_def($item) {
 }
 
 function create_shims($manifest, $dir, $global) {
-    $manifest.bin | where-object { $_ -ne $null } | foreach-object {
+    $manifest.bin | where-object { $null -ne $_ } | foreach-object {
         $target, $name, $arg = shim_def $_
         write-output "creating shim for $name"
 
@@ -541,7 +541,7 @@ function rm_shim($name, $shimdir) {
 }
 
 function rm_shims($manifest, $global) {
-    $manifest.bin | where-object { $_ -ne $null } | foreach-object {
+    $manifest.bin | where-object { $null -ne $_ } | foreach-object {
         $target, $name, $null = shim_def $_
         $shimdir = shimdir $global
 
