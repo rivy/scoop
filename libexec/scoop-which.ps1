@@ -27,7 +27,7 @@ if($path -like "$usershims*" -or $path -like "$globalshims*") {
         $exepath = resolve-path (join-path (split-path $path) $exepath)
     }
 
-    friendly_path $exepath
+    "$(resolve-path $exepath)"
 } elseif($gcm.commandtype -eq 'Alias') {
     scoop which $gcm.resolvedcommandname
 } else {
