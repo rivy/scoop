@@ -674,14 +674,14 @@ function env_rm($manifest, $global) {
 }
 
 function pre_install($manifest) {
-    $manifest.pre_install | where-object { $null -eq $_ } | foreach-object {
+    $manifest.pre_install | where-object { $null -ne $_ } | foreach-object {
         write-output "running pre-install script..."
         & $( [ScriptBlock]::Create($_) ) ## aka: invoke-expression $_
     }
 }
 
 function post_install($manifest) {
-    $manifest.post_install | where-object { $null -eq $_ } | foreach-object {
+    $manifest.post_install | where-object { $null -ne $_ } | foreach-object {
         write-output "running post-install script..."
         & $( [ScriptBlock]::Create($_) ) ## aka: invoke-expression $_
     }
