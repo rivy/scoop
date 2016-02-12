@@ -28,6 +28,15 @@ function install_app($app, $architecture, $global) {
         $check_hash = $false
     }
 
+    # $env:HOME is required by many unix-y tools (eg, MSYS tools)
+    # * trust user settings, if present
+    if (-not $(env -t 'user' HOME)) {
+        # future use
+        env -t 'user' HOME $env:USERPROFILE
+        write-host -fore cyan "scoop/install: HOME environment variable set to '$env:USERPROFILE' (at 'user' level)"
+    }
+    if (-not $(env HOME)) { env HOME $(env -t 'user' HOME) }     # current process
+
     write-output "installing $app ($version)"
 
     $dir = ensure (versiondir $app $version $global)

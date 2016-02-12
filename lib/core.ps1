@@ -154,10 +154,7 @@ function shim($path, $global, $name, $arg) {
     $shimdir_relative_path = resolve-path -relative $path
     pop-location
 
-    write-output '# ensure $HOME is set for MSYS programs' | out-file $shim -encoding DEFAULT
-    write-output "if(!`$env:home) { `$env:home = `"`$home\`" }" | out-file $shim -encoding DEFAULT -append
-    write-output 'if($env:home -eq "\") { $env:home = $env:allusersprofile }' | out-file $shim -encoding DEFAULT -append
-    write-output "`$path = join-path `"`$(`$MyInvocation.MyCommand.Path | Split-Path)`" `"$shimdir_relative_path`"" | out-file $shim -encoding DEFAULT -append
+    write-output "`$path = join-path `"`$(`$MyInvocation.MyCommand.Path | Split-Path)`" `"$shimdir_relative_path`"" | out-file $shim -encoding DEFAULT
     if($arg) {
         write-output "`$args = '$($arg -join "', '")', `$args" | out-file $shim -encoding DEFAULT -append
     }
@@ -175,10 +172,7 @@ function shim($path, $global, $name, $arg) {
         # shim .bat, .cmd so they can be used by programs with no awareness of PSH
         # NOTE: this code transfers execution flow via hand-off, not a call, so any modifications if/while in-progress are safe
         $shim_cmd = "$(strip_ext($shim)).cmd"
-        ':: ensure $HOME is set for MSYS programs'           | out-file $shim_cmd -encoding DEFAULT
-        '@if "%home%"=="" set home=%homedrive%%homepath%\'   | out-file $shim_cmd -encoding DEFAULT -append
-        '@if "%home%"=="\" set home=%allusersprofile%\'      | out-file $shim_cmd -encoding DEFAULT -append
-        "@`"%~dp0.\$shimdir_relative_path`" $arg %*"         | out-file $shim_cmd -encoding DEFAULT -append
+        "@`"%~dp0.\$shimdir_relative_path`" $arg %*"         | out-file $shim_cmd -encoding DEFAULT
     } elseif($path -match '\.ps1$') {
         # make ps1 accessible from cmd.exe
         $shim_cmd = "$(strip_ext($shim)).cmd"
