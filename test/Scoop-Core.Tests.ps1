@@ -223,10 +223,10 @@ describe 'app' {
 describe "ConfigFrom-JsonNET" {
     it "ensures the Newtonsoft.Json module is loaded" {
         $o = convertfrom-jsonNET 'true'
-        get-module 'Newtonsoft.Json' | should be $true # $true locally, fails on appveyor
+        $([System.AppDomain]::CurrentDomain.GetAssemblies() | where-object { $_.GetName().Name -eq 'Newtonsoft.Json' }) | should not be $null
     }
 
-    $module_version = "$($(get-module 'Newtonsoft.Json').version)"
+    $module_version = $([System.AppDomain]::CurrentDomain.GetAssemblies() | where-object { $_.GetName().Name -eq 'Newtonsoft.Json' }).GetName().version
     it $("ensures the Newtonsoft.Json version ('{0}') is as expected" -f $module_version) {
         $module_version | should be '8.0.0.0'
     }

@@ -476,13 +476,11 @@ function ConvertFrom-JsonNET {
         )
     BEGIN {
         $json_module_name = 'Newtonsoft.Json'
-        if (-not (Get-Module $json_module_name)) {
-            # load "Newtonsoft.Json.dll" out-of-source to allow self-updates
-            $dir = [System.IO.Path]::Combine([System.IO.Path]::GetTempPath(), 'scoop', [System.Guid]::NewGuid())
-            new-item -itemtype directory -path $dir
-            $filename = [System.IO.Path]::Combine($dir,"$json_module_name.dll")
-            copy-item -force $(resolve-path $(rootrelpath "vendor\Newtonsoft.Json\lib\net20\$json_module_name.dll")) $filename
-            import-module $(resolve-path $filename)
+        if ( $null -eq $([System.AppDomain]::CurrentDomain.GetAssemblies() | where-object { $_.GetName().Name -eq $json_module_name }) ) {
+            # avoid `import-module` which maintains an open handle on any loaded assembly .dll file until the parent assembly is shut down
+            # instead, use NET `[Reflection.Assembly]::Load(...)` to load the assembly from an in-memory copy
+            [System.Reflection.Assembly]::Load( [System.IO.File]::ReadAllBytes($(resolve-path $(rootrelpath "vendor\Newtonsoft.Json\lib\net20\$json_module_name.dll"))) ) | out-null
+            # write-host -fore darkcyan "$json_module_name loaded"
         }
         $f_ToObject = { param( $token )
             $type = $token.psobject.TypeNames -imatch "Newtonsoft\..*(JObject|JArray|JProperty|JValue)"
@@ -545,13 +543,11 @@ function ConvertTo-JsonNET {
         )
     BEGIN {
         $json_module_name = 'Newtonsoft.Json'
-        if (-not (Get-Module $json_module_name)) {
-            # load "Newtonsoft.Json.dll" out-of-source to allow self-updates
-            $dir = [System.IO.Path]::Combine([System.IO.Path]::GetTempPath(), 'scoop', [System.Guid]::NewGuid())
-            new-item -itemtype directory -path $dir
-            $filename = [System.IO.Path]::Combine($dir,"$json_module_name.dll")
-            copy-item -force $(resolve-path $(rootrelpath "vendor\Newtonsoft.Json\lib\net20\$json_module_name.dll")) $filename
-            import-module $(resolve-path $filename)
+        if ( $null -eq $([System.AppDomain]::CurrentDomain.GetAssemblies() | where-object { $_.GetName().Name -eq $json_module_name }) ) {
+            # avoid `import-module` which maintains an open handle on any loaded assembly .dll file until the parent assembly is shut down
+            # instead, use NET `[Reflection.Assembly]::Load(...)` to load the assembly from an in-memory copy
+            [System.Reflection.Assembly]::Load( [System.IO.File]::ReadAllBytes($(resolve-path $(rootrelpath "vendor\Newtonsoft.Json\lib\net20\$json_module_name.dll"))) ) | out-null
+            # write-host -fore darkcyan "$json_module_name loaded"
         }
         $list = New-Object System.Collections.Generic.List[object]
     }
