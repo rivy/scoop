@@ -301,10 +301,10 @@ describe "Config*-JsonNET" {
     $json = '{ "one": 1, "two": [ { "a": "a" }, "b", 2 ], "three": { "four": 4 } }'
 
     it "conversions are reversible" {
-        # NOTE: as written, this test may correctly fail
-        #   ... json properties are unordered and may shift within equivalent json strings
+        # NOTE: as written, this test may *correctly* fail
+        #   ... json properties are unordered and may positionally shifted within equivalent json strings
         #   ... an initial conversion gives a more reliable target for testing equivalency
-        #   ... but *not* guaranteed; a sorted json output would be needed for a guarantee
+        #   ... but *not* guaranteed; a canonical json output form (eg, sorted by key) would be needed for a guarantee
 
         $target_json = convertto-jsonNET $(convertfrom-jsonNET $json) -indentation -1
         $original_json = $target_json
