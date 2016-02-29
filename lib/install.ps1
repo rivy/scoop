@@ -635,7 +635,9 @@ function find_dir_or_subdir($path, $dir) {
 }
 
 function env_add_path($manifest, $dir, $global) {
-    $manifest.env_add_path | where-object { $null -ne $_ } | foreach-object {
+    $paths = @( $manifest.env_add_path )
+    [array]::Reverse( $paths ) # in-place reverse
+    $paths | where-object { $null -ne $_ } | foreach-object {
         $path_dir = "$dir\$($_)"
         if(!(is_in_dir $dir $path_dir)) {
             abort "error in manifest: env_add_path '$_' is outside the app directory"
