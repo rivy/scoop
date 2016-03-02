@@ -59,10 +59,14 @@ $rule_exclusions = @( 'PSAvoidUsingWriteHost' )
 
 ##
 
-# $repo_dir = (Get-Item $MyInvocation.MyCommand.Path).directory.parent
+# $repo_dir = ( Get-Item $MyInvocation.MyCommand.Path ).directory.parent
 $repo_dir = [System.IO.FileInfo]::new(${__0}).directory.parent
 
-$repo_files = @( Get-ChildItem $repo_dir.fullname -file -recurse -force )
+$repo_files = @(
+    $args |
+        foreach-object { Get-ChildItem $_ -ea Silent }
+)
+if ( $repo_files.count -lt 1 ) { $repo_files = @( Get-ChildItem $repo_dir.fullname -file -recurse -force ) }
 
 $project_file_exclusions = @(
     $([regex]::Escape($repo_dir.fullname)+'\\.git\\.*$')
@@ -77,7 +81,7 @@ $files = @(
 
 $files_exist = ($files.Count -gt 0)
 
-if (-not $files_exist) { throw "no files found to critique"}
+if (-not $files_exist) { throw "no files found to critique" }
 
 $lint_module_name = 'PSScriptAnalyzer'
 $lint_module_version = '1.3.0'
@@ -87,7 +91,7 @@ if (-not (Get-Module $lint_module_name)) {
 }
 $have_delinter = Get-Module $lint_module_name
 
-if (-not $have_delinter) { throw "unable to find/load '$lint_module_name' for critique"}
+if (-not $have_delinter) { throw "unable to find/load '$lint_module_name' for critique" }
 
 function abbrev_message {
     param([string]$message,[int]$size=$host.ui.RawUI.windowsize.width-1)
