@@ -1,5 +1,7 @@
 $cfgpath = "~/.scoop"
 
+## hashtable() + hashtable_val() are not needed when using convert*-jsonNET
+## deprecated, PENDING removal
 function hashtable($obj) {
     $h = @{ }
     $obj.psobject.properties | foreach-object {
@@ -29,12 +31,13 @@ function hashtable_val($obj) {
     }
     $obj # assume primitive
 }
+##
 
 function load_cfg {
     if(!(test-path $cfgpath)) { $null; return }
 
     try {
-        hashtable ([System.IO.File]::ReadAllText($(resolve-path $cfgpath)) | convertfrom-jsonNET -ea stop)
+        [System.IO.File]::ReadAllText($(resolve-path $cfgpath)) | convertfrom-jsonNET -ea stop
     } catch {
         write-host "ERROR loading $cfgpath`: $($_.exception.message)"
     }
