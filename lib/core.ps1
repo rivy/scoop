@@ -70,6 +70,13 @@ function friendly_path($path) {
 function is_local($path) {
     ($path -notmatch '^https?://') -and (test-path $path)
 }
+function normalize_path($path) {
+    # $path does NOT need to exist
+    $path = $path -replace "^~", $env:USERPROFILE   # expand '~' for PowerShell paths
+    if ($path) { $path = [System.IO.Path]::GetFullPath($path) }
+    $path = $path.TrimEnd( [System.IO.Path]::DirectorySeparatorChar )
+    $path
+}
 
 # operations
 function dl($url,$to) {
@@ -330,14 +337,55 @@ $code
 }
 
 function ensure_in_path($dir, $global) {
-    $path = env 'path' -t $global
     $dir = fullpath $dir
-    if($path -notmatch [regex]::escape($dir)) {
-        write-output "adding $(friendly_path $dir) to $(if($global){'global'}else{'your'}) path"
 
-        env 'path' -t $global "$dir;$path" # for future sessions...
-        env 'path' "$dir;$env:path"        # for this session
+    # write-host -fore cyan "dir = '$dir'"
+
+    $regex = ';(?=(?:[^\"]*\"[^\"]*\")*(?![^\"]*\"))'   # ';' followed by zero or more balanced double-quotes
+
+    # ToDO: test with path non-existant (may need several `-erroraction silentlycontinue`)
+    $shim_dir = normalize_path $(shimdir $global)
+    $shim_dir_parent = normalize_path $($shim_dir + '/..')
+
+    # write-host -fore cyan "shim_dir = '$shim_dir'"
+    # write-host -fore cyan "shim_dir = '$shim_dir_parent'"
+
+    # future sessions
+    $p = env 'path' -t $global
+    $was_present, $currpath = strip_path $p $dir
+    if ( -not $was_present ) { write-output "adding '$dir' to $(if($global){'global'}else{'your'}) path" }
+    # write-host -fore cyan "currpath = '$currpath'"
+    $paths = $currpath -split $regex
+    # write-host -fore cyan "[paths]`n$paths"
+    # write-host -fore cyan "paths.count = $($paths.count)"
+    if ($paths.count -lt 1) { $paths = @( $dir ) }
+    else {
+        $index = [System.Array]::FindIndex($paths, [Predicate[string]]{ $(normalize_path $args[0]) -imatch $('^'+[regex]::escape($shim_dir_parent)) })
+        if ( $index -lt 0 ) { $index = $paths.count }
+        if ( $paths[$index] -ine $shim_dir ) { $index -= 1 }    # place after $shim_dir but before any other scoop dir
+        $new_paths = $paths[0..$index] + $dir + $( if ($index -lt $paths.count) { $paths[$($index+1)..$paths.count] } )
+        $paths = $new_paths
     }
+    # write-host -fore cyan "[paths]`n$paths"
+    # write-host -fore cyan "paths.count = $($paths.count)"
+    env 'path' -t $global $( $paths -join ';' )
+
+    # this session / current process
+    $null, $env:path = strip_path $env:path $dir
+    $paths = $env:path -split $regex
+    # write-host -fore cyan "[paths]`n$paths"
+    # write-host -fore cyan "paths.count = $($paths.count)"
+    if ($paths.count -lt 1) { $paths = @( $dir ) }
+    else {
+        $index = [System.Array]::FindIndex($paths, [Predicate[string]]{ $(normalize_path $args[0]) -imatch $('^'+[regex]::escape($shim_dir_parent)) })
+        if ( $index -lt 0 ) { $index = $paths.count }
+        if ( $paths[$index] -ine $shim_dir ) { $index -= 1 }    # place after $shim_dir but before any other scoop dir
+        $new_paths = $paths[0..$index] + $dir + $( if ($index -lt $paths.count) { $paths[$($index+1)..$paths.count] } )
+        $paths = $new_paths
+    }
+    # write-host -fore cyan "[paths]`n$paths"
+    # write-host -fore cyan "paths.count = $($paths.count)"
+    env 'path' $( $paths -join ';' )
 }
 
 function strip_path($orig_path, $dir) {
