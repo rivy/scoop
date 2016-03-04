@@ -393,8 +393,9 @@ function ensure_in_path($dir, $global) {
 }
 
 function strip_path($orig_path, $dir) {
-    $stripped = [string]::join(';', @( $orig_path.split(';') | where-object { $_ -and $_ -ne $dir } ))
-    ($stripped -ne $orig_path), $stripped
+    $dir = normalize_path $dir
+    $stripped = [string]::join(';', @( split_pathlist $orig_path | where-object { $_ -and $_ -ine $dir } ))
+    ($stripped -ine $orig_path), $stripped
 }
 
 function remove_from_path($dir,$global) {
