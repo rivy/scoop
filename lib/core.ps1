@@ -77,6 +77,12 @@ function normalize_path($path) {
     $path = $path.TrimEnd( [System.IO.Path]::DirectorySeparatorChar )
     $path
 }
+function split_pathlist($pathlist) {
+    # PATHLIST == semicolon separated paths (possibly double-quoted with internal semicolons)
+    # RETURN = array of normalized paths
+    $regex = ';(?=(?:[^\"]*\"[^\"]*\")*(?![^\"]*\"))'   # ';' followed by zero or more balanced double-quotes
+    @( $pathlist -split $regex | foreach-object { normalize_path $_ } )
+}
 
 # operations
 function dl($url,$to) {
