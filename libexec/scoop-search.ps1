@@ -26,7 +26,7 @@ function bin_match($manifest, $query) {
 }
 
 function search_bucket($bucket, $query) {
-    $apps = apps_in_bucket (bucketdir $bucket) | foreach-object {
+    $apps = apps_in_bucket $bucket | foreach-object {
         @{ name = $_ }
     }
 

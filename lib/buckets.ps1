@@ -17,7 +17,8 @@ function known_bucket_repo($name) {
     $buckets.$name
 }
 
-function apps_in_bucket($dir) {
+function apps_in_bucket($bucket) {
+    $dir = bucketdir $bucket
     get-childitem $dir | where-object { $_.name.endswith('.json') } | foreach-object { $_ -replace '.json$', '' }
 }
 
