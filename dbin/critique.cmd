@@ -83,6 +83,7 @@ $files_exist = ($files.Count -gt 0)
 
 if (-not $files_exist) { throw "no files found to critique" }
 
+# NOTE: PSScriptAnalyzer automatically unloads it's associated the lint module assembly when shut down (no need for an in-memory copy)
 $lint_module_name = 'PSScriptAnalyzer'
 $lint_module_version = '1.3.0'
 if (-not (Get-Module $lint_module_name)) {
