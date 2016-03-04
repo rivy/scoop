@@ -26,7 +26,8 @@ function create_manifest($url) {
 
     $manifest.version = choose_item $url_parts "Version"
 
-    $manifest | convertto-jsonNET | out-file -filepath "$name.json" -encoding utf8
+    [System.IO.File]::WriteAllText( "$name.json", $($manifest | convertto-jsonNET) )
+
     $manifest_path = join-path $pwd "$name.json"
     write-host "Created $manifest_path"
 }

@@ -58,7 +58,7 @@ function set_config($name, $val) {
         $cfg.remove($name)
     }
 
-    convertto-jsonNET $cfg | out-file $cfgpath -encoding utf8
+    [System.IO.File]::WriteAllText( $(normalize_path $cfgpath), $(convertto-jsonNET $cfg) )
 }
 
 $cfg = load_cfg
