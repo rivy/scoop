@@ -4,7 +4,8 @@
 #
 # If used with [query], shows app names that match the query.
 # Without [query], shows all the available apps.
-param($query)
+
+# param($query)
 
 . "$($MyInvocation.MyCommand.Path | Split-Path | Split-Path)\lib\core.ps1"
 . $(rootrelpath "lib\buckets.ps1")
@@ -94,22 +95,24 @@ function search_remotes($query) {
     }
 }
 
-@($null) + @(buckets) | foreach-object { # $null is main bucket
-    $res = search_bucket $_ $query
-    $local_results = $local_results -or $res
-    if($res) {
-        $name = "$_"
-        if(!$_) { $name = "main" }
+if ($null -ne $args) { $args | foreach-object {
+    $query = $_
+    @($null) + @(buckets) | foreach-object { # $null is main bucket
+        $res = search_bucket $_ $query
+        if($res) {
+            $name = "$_"
+            if(!$_) { $name = "main" }
 
-        "$name bucket:"
-        $res | foreach-object {
-            $item = "  $($_.name) ($($_.version))"
-            if($_.bin) { $item += " --> includes '$($_.bin)'" }
-            $item
+            "$name bucket:"
+            $res | foreach-object {
+                $item = "  $($_.name) ($($_.version))"
+                if($_.bin) { $item += " --> includes '$($_.bin)'" }
+                $item
+            }
+            ""
         }
-        ""
     }
-}
+}}
 
 if (!$local_results -and !(github_ratelimit_reached)) {
     search_remotes $query
