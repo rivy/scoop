@@ -553,7 +553,7 @@ function rm_shims($manifest, $global) {
 
 # Creates shortcut for the app in the start menu
 function create_startmenu_shortcuts($manifest, $dir, $global) {
-    $manifest.shortcuts | ?{ $_ -ne $null } | % {
+    $manifest.shortcuts | where-object { $_ -ne $null } | foreach-object {
         $target = $_.item(0)
         $name = $_.item(1)
         startmenu_shortcut "$dir\$target" $name
@@ -576,12 +576,12 @@ function startmenu_shortcut($target, $shortcutName) {
 
 # Removes the Startmenu shortcut if it exists
 function rm_startmenu_shortcuts($manifest, $global) {
-    $manifest.shortcuts | ?{ $_ -ne $null } | % {
+    $manifest.shortcuts | where-object { $_ -ne $null } | foreach-object {
         $name = $_.item(1)
         $shortcut = "$env:USERPROFILE\Start Menu\Programs\$name.lnk"
         if(Test-Path -Path $shortcut) {
              Remove-Item $shortcut
-             echo "Removed shortcut $shortcut"
+             write-output "Removed shortcut $shortcut"
         }
     }
 }
