@@ -16,15 +16,21 @@ if(!$args) { 'ERROR: <app> missing'; my_usage; exit 1 }
 
 if ($null -ne $args) { $args | foreach-object {
     $app = $_
-    if(!(installed $app)) { abort "$app isn't installed" }
 
-    $version = current_version $app
+    $global = installed $app $true
+    if($global -and !(is_admin)) {
+        'ERROR: you need admin rights to reset global apps'; exit 1
+    }
+
+    if(!(installed $app $global)) { abort "$app isn't installed" }
+
+    $version = current_version $app $global
     "resetting $app ($version)"
 
-    $dir = resolve-path (versiondir $app $version)
-    $manifest = installed_manifest $app $version
+    $dir = resolve-path (versiondir $app $version $global)
+    $manifest = installed_manifest $app $version $global
 
-    create_shims $manifest $dir $false
-    env_add_path $manifest $dir
-    env_set $manifest $dir
+    create_shims $manifest $dir $global
+    env_add_path $manifest $dir $global
+    env_set $manifest $dir $global
 }}
