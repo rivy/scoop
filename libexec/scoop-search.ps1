@@ -48,7 +48,7 @@ function search_bucket($bucket, $query) {
 
 function download_json($url) {
     $progressPreference = 'silentlycontinue'
-    $result = invoke-webrequest $url | select -exp content | convertfrom-json
+    $result = invoke-webrequest $url | select-object -exp content | convertfrom-json
     $progressPreference = 'continue'
     $result
 }
@@ -66,9 +66,9 @@ function search_remote($bucket, $query) {
         $user = $matches[1]
         $repo_name = $matches[2]
         $api_link = "https://api.github.com/repos/$user/$repo_name/git/trees/HEAD?recursive=1"
-        $result = download_json $api_link | select -exp tree |? {
+        $result = download_json $api_link | select-object -exp tree | where-object {
             $_.path -match "(($query[a-zA-Z0-9-]*).json)"
-        } |% { $matches[2] }
+        } | foreach-object { $matches[2] }
     }
 
     $result
@@ -76,11 +76,11 @@ function search_remote($bucket, $query) {
 
 function search_remotes($query) {
     $buckets = known_bucket_repos
-    $names = $buckets | get-member -m noteproperty | select -exp name
+    $names = $buckets | get-member -m noteproperty | select-object -exp name
 
-    $results = $names |? { !(test-path $(bucketdir $_)) } |% {
+    $results = $names | where-object { !(test-path $(bucketdir $_)) } | foreach-object {
         @{"bucket" = $_; "results" = (search_remote $_ $query)}
-    } |? { $_.results }
+    } | where-object { $_.results }
 
     if ($results.count -gt 0) {
         "results from other known buckets..."
@@ -88,14 +88,14 @@ function search_remotes($query) {
         ""
     }
 
-    $results |% {
+    $results | foreach-object {
         "$($_.bucket) bucket:"
-        $_.results |% { "  $_" }
+        $_.results | foreach-object { "  $_" }
         ""
     }
 }
 
-@($null) + @(buckets) | % { # $null is main bucket
+@($null) + @(buckets) | foreach-object { # $null is main bucket
     $res = search_bucket $_ $query
     $local_results = $local_results -or $res
     if($res) {

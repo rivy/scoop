@@ -654,7 +654,7 @@ function show_notes($manifest) {
 }
 
 function all_installed($apps, $global) {
-    $apps | ? {
+    $apps | where-object {
         $app, $null = app $_
         installed $app $global
     }
