@@ -1,6 +1,8 @@
+write-host -f darkyellow "[$(split-path -leaf $MyInvocation.MyCommand.Path)]"
+
+. "$psscriptroot\lib\Scoop-TestLib.ps1"
 . "$psscriptroot\..\lib\core.ps1"
 . "$psscriptroot\..\lib\install.ps1"
-. "$psscriptroot\Scoop-TestLib.ps1"
 
 $repo_dir = (Get-Item $MyInvocation.MyCommand.Path).directory.parent.FullName
 
@@ -69,7 +71,7 @@ describe "unzip_old" {
 
             $to | should exist
 
-            (gci $to).count | should be 0
+            (get-childitem $to).count | should be 0
         }
     }
 
@@ -89,7 +91,7 @@ describe "unzip_old" {
 
             # these don't work for some reason on appveyor
             #join-path $to "empty" | should exist
-            #(gci $to).count | should be 1
+            #(get-childitem $to).count | should be 1
         }
     }
 }
@@ -159,8 +161,8 @@ describe "ensure_robocopy_in_path" {
 
     context "robocopy is not in path" {
         it "shims robocopy when not on path" {
-            mock gcm { $false }
-            gcm robocopy | should be $false
+            mock get-command { $false }
+            get-command robocopy | should be $false
 
             ensure_robocopy_in_path
 
@@ -174,7 +176,7 @@ describe "ensure_robocopy_in_path" {
 
     context "robocopy is in path" {
         it "does not shim robocopy when it is in path" {
-            mock gcm { $true }
+            mock get-command { $true }
             ensure_robocopy_in_path
 
             "$shimdir/robocopy.ps1" | should not exist

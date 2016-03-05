@@ -49,7 +49,7 @@ function add_alias($name, $command) {
 # Summary: $description
 $command
 "@
-  $script | out-file "$shimdir\$alias_file.ps1" -encoding oem
+  $script | out-file "$shimdir\$alias_file.ps1" -encoding DEFAULT
 
   # add alias to config
   $aliases += @{ $name = $alias_file }
@@ -72,13 +72,13 @@ function rm_alias($name) {
 
 function list_aliases {
   $aliases = @{}
-  (get_config $script:config_alias).getenumerator() |% {
-    $summary = summary (gc (command_path $_.name) -raw)
+  (get_config $script:config_alias).getenumerator() | foreach-object {
+    $summary = summary (get-content (command_path $_.name) -raw)
     if(!($summary)) { $summary = '' }
     $aliases.add("$($_.name) ", $summary)
   }
 
-  $aliases.getenumerator() | sort name | ft -hidetablehead -autosize -wrap
+  $aliases.getenumerator() | sort-object name | format-table -hidetablehead -autosize -wrap
 }
 
 switch($opt) {

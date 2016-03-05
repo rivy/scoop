@@ -2,17 +2,17 @@ $cfgpath = "~/.scoop"
 
 function hashtable($obj) {
     $h = @{ }
-    $obj.psobject.properties | % {
+    $obj.psobject.properties | foreach-object {
         $h[$_.name] = hashtable_val $_.value
     }
     return $h
 }
 
 function hashtable_val($obj) {
-    if($obj -eq $null) { return $null }
+    if($null -eq $obj) { return $null }
     if($obj -is [array]) {
         $arr = @()
-        $obj | % {
+        $obj | foreach-object {
             $val = hashtable_val $_
             if($val -is [array]) {
                 $arr += ,@($val)
@@ -32,7 +32,7 @@ function load_cfg {
     if(!(test-path $cfgpath)) { return $null }
 
     try {
-        hashtable (gc $cfgpath -raw | convertfrom-json -ea stop)
+        hashtable (get-content $cfgpath -raw | convertfrom-json -ea stop)
     } catch {
         write-host "ERROR loading $cfgpath`: $($_.exception.message)"
     }
@@ -49,7 +49,7 @@ function set_config($name, $val) {
         $cfg.$name = $val
     }
 
-    if($val -eq $null) {
+    if($null -eq $val) {
         $cfg.remove($name)
     }
 
@@ -77,7 +77,7 @@ if($p) {
         if($cred -eq 'currentuser') {
             [net.webrequest]::defaultwebproxy.credentials = [net.credentialcache]::defaultcredentials
         } elseif($cred) {
-            $user, $pass = $cred -split '(?<!\\):' |% { $_ -replace '\\([@:])','$1' }
+            $user, $pass = $cred -split '(?<!\\):' | foreach-object { $_ -replace '\\([@:])','$1' }
             [net.webrequest]::defaultwebproxy.credentials = new-object net.networkcredential($user, $pass)
         }
     } catch {

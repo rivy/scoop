@@ -1,3 +1,5 @@
+write-host -f darkyellow "[$(split-path -leaf $MyInvocation.MyCommand.Path)]"
+
 . "$psscriptroot\..\libexec\scoop-alias.ps1" | out-null
 
 reset_aliases
@@ -16,7 +18,7 @@ describe "add_alias" {
       $alias_file | should not exist
 
       add_alias "rm" '"hello, world!"'
-      iex $alias_file | should be "hello, world!"
+      & $alias_file | should be "hello, world!" ## aka: invoke-expression $alias_file | should be "hello, world!"
     }
   }
 

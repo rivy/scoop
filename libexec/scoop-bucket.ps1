@@ -32,7 +32,7 @@ function add_bucket($name, $repo) {
         if(!$repo) { "unknown bucket '$name': try specifying <repo>"; $usage_add; exit 1 }
     }
 
-    $git = try { gcm 'git' -ea stop } catch { $null }
+    $git = try { get-command 'git' -ea stop } catch { $null }
     if(!$git) {
         abort "git is required for buckets. run 'scoop install git'."
     }
@@ -43,7 +43,7 @@ function add_bucket($name, $repo) {
     }
 
     write-host 'checking repo...' -nonewline
-    git ls-remote $repo 2>&1 > $null
+    & 'git' @( 'ls-remote', $repo ) 2>&1 > $null
     if($lastexitcode -ne 0) {
         abort "'$repo' doesn't look like a valid git repository"
     }
@@ -51,7 +51,7 @@ function add_bucket($name, $repo) {
 
     ensure $bucketsdir > $null
     $dir = ensure $dir
-    git clone "$repo" "$dir"
+    & 'git' @( 'clone',  $repo, $dir ) 2>$null
     success "$name bucket was added successfully"
 }
 
@@ -62,7 +62,7 @@ function rm_bucket($name) {
         abort "'$name' bucket not found"
     }
 
-    rm $dir -r -force -ea stop
+    remove-item $dir -r -force -ea stop
 }
 
 function list_buckets {

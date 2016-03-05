@@ -1,5 +1,5 @@
-$fwdir = gci C:\Windows\Microsoft.NET\Framework\ -dir | sort -desc | select -first 1
+$fwdir = get-childitem C:\Windows\Microsoft.NET\Framework\ -dir | sort-object -desc | select-object -first 1
 
-pushd $psscriptroot
+push-location $psscriptroot
 & "$($fwdir.fullname)\csc.exe" /nologo shim.cs
-popd
+pop-location

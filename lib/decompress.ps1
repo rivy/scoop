@@ -6,12 +6,21 @@ function requires_7zip($manifest, $architecture) {
     }
 }
 
+function requires_lessmsi ($manifest, $architecture) {
+    $useLessMsi = get_config MSIEXTRACT_USE_LESSMSI
+    if (!$useLessMsi) { return $false }
+
+    $(url $manifest $architecture | where-object {
+        $_ -match '\.(msi)$'
+    } | measure-object | select-object -exp count) -gt 0
+}
+
 function file_requires_7zip($fname) {
     $fname -match '\.((gz)|(tar)|(tgz)|(lzma)|(bz)|(7z)|(rar)|(iso)|(xz))$'
 }
 
 function extract_7zip($path, $to, $recurse) {
-    $output = 7z x "$path" -o"$to" -y
+    $null = & "7z" @('x', "`"$path`"", "-o`"$to`"", '-y')
     if($lastexitcode -ne 0) { abort "exit code was $lastexitcode" }
 
     # check for tar
@@ -20,5 +29,5 @@ function extract_7zip($path, $to, $recurse) {
         if(test-path "$to\$tar") { extract_7zip "$to\$tar" $to $true }
     }
 
-    if($recurse) { rm $path } # clean up intermediate files
+    if($recurse) { remove-item $path } # clean up intermediate files
 }

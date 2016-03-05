@@ -1,16 +1,29 @@
-Scoop [![Build status](https://ci.appveyor.com/api/projects/status/bfsfu6bwyviaqjhi/branch/master?svg=true)](https://ci.appveyor.com/project/deevus/scoop/branch/master)
+Scoop [![Build status](https://ci.appveyor.com/api/projects/status/jgckhkhe5rdd6586/branch/master?svg=true)](https://ci.appveyor.com/project/rivy/scoop/branch/master)
 =====
 
 Scoop is a command-line installer for Windows.
 
-Requirements:
+#### Requirements
 
-* [PowerShell 3](http://www.microsoft.com/en-us/download/details.aspx?id=34595)
-* PowerShell must be enabled for your user account e.g. `set-executionpolicy unrestricted -s cu`
+* PowerShell 3+
+* PowerShell script execution policy must configured as either `unrestricted` or `bypass` for your user account
 
-To install:
+##### PowerShell Execution Policy
 
-    iex (new-object net.webclient).downloadstring('https://get.scoop.sh')
+Please note that, for operation, `scoop` requires a liberal PowerShell execution policy (in the same manner as [`chocolatey`](https://chocolatey.org)). So, during installation, if the PowerShell execution policy for the current user is more restrictive than `unrestricted` (i.e., `restricted`, `allsigned`, or `remotesigned`), it will be changed to `unrestricted` and saved into the registry as the user's default policy.
+
+#### Installation
+
+To install, paste either of the following set of command strings at the respective shell prompt.
+
+##### CMD Shell &middot; `C:\>`
+
+    powershell -command "iex (new-object net.webclient).downloadstring( 'https://raw.github.com/rivy/scoop/master/bin/install.ps1' )"
+    set PATH=%PATH%;%LOCALAPPDATA%\scoop\shims
+
+##### PowerShell &middot; `PS C:\>`
+
+    iex (new-object net.webclient).downloadstring( 'https://raw.github.com/rivy/scoop/master/bin/install.ps1' )
 
 Once installed, run `scoop help` for instructions.
 

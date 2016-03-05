@@ -1,4 +1,5 @@
-# retain windows line-endings in case checked out on mac or linux
+# retain windows line-endings for text files
 * text eol=crlf
+#
 *.exe -text
 *.zip -text

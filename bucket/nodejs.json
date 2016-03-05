@@ -1,15 +1,15 @@
 {
     "homepage": "http://nodejs.org",
-    "version": "0.12.7",
+    "version": "5.3.0",
     "license": "MIT",
     "architecture": {
         "64bit": {
-            "url": "http://nodejs.org/dist/v0.12.7/x64/node-v0.12.7-x64.msi",
-            "hash": "sha1:05cfffda323563c42ff2e461a8e98ee984ad15d1"
+            "url": "https://nodejs.org/dist/v5.3.0/node-v5.3.0-x64.msi",
+            "hash": "1c2a516cac40488f0d305c8aeed2fc61075dd882427830c12593f652d68f65e0"
         },
         "32bit": {
-            "url": "http://nodejs.org/dist/v0.12.7/node-v0.12.7-x86.msi",
-            "hash": "sha1:7aa06c0d54c97e5193bafc927dbe1bede308da97"
+            "url": "https://nodejs.org/dist/v5.3.0/node-v5.3.0-x86.msi",
+            "hash": "156065db0018e3058e2fb41753eb27d160e6ba3ec5fad8f394f1c6f2992661af"
         }
     },
     "env_add_path": "nodejs",
@@ -17,5 +17,5 @@
 # Remove npmrc that makes global modules get installed in AppData\\Roaming\\npm
 rm $dir\\nodejs\\node_modules\\npm\\npmrc
 npm update -g",
-    "checkver": "<p class=\"version\">Current Version: v([0-9\\.]+)</p>"
+    "checkver": "<p class=\"home-version home-version-banner\">\\s*Current Version: v([0-9\\.]+)"
 }
