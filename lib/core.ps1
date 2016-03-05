@@ -1,4 +1,4 @@
-$scoopdir = $env:SCOOP, "~\appdata\local\scoop" | select-object -first 1
+$scoopdir = $env:SCOOP, "$env:LOCALAPPDATA\scoop" | select-object -first 1
 $globaldir = $env:SCOOP_GLOBAL, "$($env:programdata.tolower())\scoop" | select-object -first 1
 
 $CMDenvpipe = $env:SCOOP__CMDenvpipe
