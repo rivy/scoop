@@ -460,3 +460,11 @@ function CMD_SET_encode_arg {
             }
         }
     }
+
+function app($app) {
+    $app = [string]$app
+    if ($app -match '([a-zA-Z0-9-]+)/([a-zA-Z0-9-]+)') {
+        return $matches[2], $matches[1]
+    }
+    $app, $null
+}
