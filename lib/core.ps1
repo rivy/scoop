@@ -429,7 +429,7 @@ function reset_alias($name, $value) {
 
 function reset_aliases() {
     # for aliases where there's a local function, re-alias so the function takes precedence
-    $aliases = get-alias | where-object { $_.options -notmatch 'readonly' } | foreach-object { $_.name }
+    $aliases = get-alias | where-object { $_.options -notmatch 'readonly|allscope' } | foreach-object { $_.name }
     get-childitem function: | foreach-object {
         $fn = $_.name
         if($aliases -contains $fn) {
