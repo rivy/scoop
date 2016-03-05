@@ -9,7 +9,7 @@ function bucketdir($name) {
 function known_bucket_repos {
     $dir = versiondir 'scoop' 'current'
     $json = "$dir\buckets.json"
-    gc $json -raw | convertfrom-json -ea stop
+    get-content $json -raw | convertfrom-json -ea stop
 }
 
 function known_bucket_repo($name) {
