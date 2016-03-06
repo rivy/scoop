@@ -33,8 +33,9 @@ function warn_installed($apps, $global) {
     if ($null -ne $apps) { $apps | foreach-object {
         $app = $_
         if($app) {
+            $app_name = app_name $app
             $version = @(versions $app $global)[-1]
-            warn "$app ($version) is already installed. use 'scoop update $app$global_flag' to update to a newer version."
+            warn "$app_name ($version) is already installed. Use 'scoop update $app_name$global_flag' to update to a newer version."
         }
 
     }}
@@ -55,9 +56,12 @@ if($global -and !(is_admin)) {
 ensure_none_failed $apps $global
 warn_installed $apps $global
 
+# trace "1:apps = $apps"
 $apps = install_order $apps $architecture # adds dependencies
+# trace "2:apps = $apps"
 ensure_none_failed $apps $global
 $apps = prune_installed $apps $global # removes dependencies that are already installed
+# trace "3:apps = $apps"
 
 $apps | foreach-object { install_app $_ $architecture $global }
 

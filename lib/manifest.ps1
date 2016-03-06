@@ -1,8 +1,11 @@
 . "$($MyInvocation.MyCommand.Path | Split-Path | Split-Path)\lib\core.ps1"
 
-function manifest_path($app, $bucket) {
-
-    "$(bucketdir $bucket)\$(sanitary_path $app).json"
+function manifest_path($app) {
+    # trace "manifest_path(): app = $app"
+    $name, $bucket, $variant = app_parse $app
+    # trace "manifest_path(): name, bucket, variant = $name, $bucket, $variant"
+    $fname = $name + $(if ($variant) { "@$variant" })
+    "$(bucketdir $bucket)\$(sanitary_path $fname).json"
 }
 
 function parse_json($path) {
@@ -11,6 +14,7 @@ function parse_json($path) {
 }
 
 function url_manifest($url) {
+    # write-host "url_manifest(): url = $url"
     $str = $null
     try {
         $str = (new-object net.webclient).downloadstring($url)
@@ -23,14 +27,14 @@ function url_manifest($url) {
     $str | convertfrom-jsonNET
 }
 
-function manifest($app, $bucket, $url) {
+function manifest($app, $url) {
     if($url) { url_manifest $url; return }
-    parse_json (manifest_path $app $bucket)
+    parse_json (manifest_path $app)
 }
 
-function save_installed_manifest($app, $bucket, $dir, $url) {
+function save_installed_manifest($app, $dir, $url) {
     if($url) { (new-object net.webclient).downloadstring($url) > "$dir\manifest.json" }
-    else { copy-item (manifest_path $app $bucket) "$dir\manifest.json" }
+    else { copy-item (manifest_path $app) "$dir\manifest.json" }
 }
 
 function installed_manifest($app, $version, $global) {

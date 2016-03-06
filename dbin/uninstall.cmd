@@ -80,7 +80,7 @@ function do_uninstall($app, $global) {
     $install = install_info $app $version $global
     $architecture = $install.architecture
 
-    write-output "uninstalling $app"
+    write-output "uninstalling $(app_name $app)"
     run_uninstaller $manifest $architecture $dir
     rm_shims $manifest $global
     env_rm_path $manifest $dir $global

@@ -194,26 +194,26 @@ describe 'sanitary_path' {
   }
 }
 
-describe 'app' {
+describe 'app_parse' {
     it 'parses the bucket name from an app query' {
         $query = "test"
-        $app, $bucket = app $query
-        $app | should be "test"
+        $name, $bucket, $null = app_parse $query
+        $name | should be "test"
         $bucket | should be $null
 
         $query = "extras/enso"
-        $app, $bucket = app $query
-        $app | should be "enso"
+        $name, $bucket, $null = app_parse $query
+        $name | should be "enso"
         $bucket | should be "extras"
 
         $query = "test-app"
-        $app, $bucket = app $query
-        $app | should be "test-app"
+        $name, $bucket, $null = app_parse $query
+        $name | should be "test-app"
         $bucket | should be $null
 
         $query = "test-bucket/test-app"
-        $app, $bucket = app $query
-        $app | should be "test-app"
+        $name, $bucket, $null = app_parse $query
+        $name | should be "test-app"
         $bucket | should be "test-bucket"
     }
 }

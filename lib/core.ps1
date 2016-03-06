@@ -33,6 +33,7 @@ function error($msg) { write-host $msg -f darkred }
 function warn($msg) { write-host $msg -f darkyellow }
 function info($msg) { write-host $msg -f darkcyan }
 function success($msg) { write-host $msg -f darkgreen }
+function trace($msg) { write-host ("TRACE: "+$msg) -f darkmagenta }
 
 # abort
 function abort($msg, $exit_code=-1) { error $msg; exit $exit_code }
@@ -43,7 +44,7 @@ function cachedir() { "$scoopdir\cache" } # always local
 function basedir($global) { if($global) { $globaldir } else { $scoopdir } }
 function appsdir($global) { "$(basedir $global)\apps" }
 function shimdir($global) { "$(basedir $global)\shims" }
-function appdir($app, $global) { "$(appsdir $global)\$app" }
+function appdir($app, $global) { "$(appsdir $global)\$(app_name $app)" }
 function versiondir($app, $version, $global) { "$(appdir $app $global)\$version" }
 
 # apps
@@ -55,7 +56,7 @@ function installed($app, $global=$null) {
 function installed_apps($global) {
     $dir = appsdir $global
     if(test-path $dir) {
-        get-childitem $dir | where-object { $_.psiscontainer -and $_.name -ne 'scoop' } | foreach-object { $_.name }
+        get-childitem $dir | where-object { $_.psiscontainer -and $_.name -ne 'scoop' } | foreach-object { app $_.name }
     }
 }
 
@@ -350,23 +351,23 @@ $code
 function ensure_in_path($dir, $global) {
     $dir = fullpath $dir
 
-    # write-host -fore cyan "dir = '$dir'"
+    # trace "ensure_in_path(): dir = '$dir'"
 
     # ToDO: test with path non-existant (may need several `-erroraction silentlycontinue`)
     $shim_dir = normalize_path $(shimdir $global)
     $shim_dir_parent = normalize_path $($shim_dir + '/..')
 
-    # write-host -fore cyan "shim_dir = '$shim_dir'"
-    # write-host -fore cyan "shim_dir = '$shim_dir_parent'"
+    # trace "ensure_in_path(): shim_dir = '$shim_dir'"
+    # trace "ensure_in_path(): shim_dir = '$shim_dir_parent'"
 
     # future sessions
     $p = env 'path' -t $global
     $was_present, $currpath = strip_path $p $dir
     if ( -not $was_present ) { write-output "adding '$dir' to $(if($global){'global'}else{'your'}) path" }
-    # write-host -fore cyan "currpath = '$currpath'"
+    # trace "ensure_in_path(): currpath = '$currpath'"
     $paths = split_pathlist $currpath
-    # write-host -fore cyan "[paths]`n$paths"
-    # write-host -fore cyan "paths.count = $($paths.count)"
+    # trace "ensure_in_path(): [paths]`n$paths"
+    # trace "ensure_in_path(): paths.count = $($paths.count)"
     if ($paths.count -lt 1) { $paths = @( $dir ) }
     else {
         $index = [System.Array]::IndexOf( $paths, @( @( $paths ) -imatch $('^'+[regex]::escape($shim_dir_parent)) )[0] )
@@ -375,15 +376,15 @@ function ensure_in_path($dir, $global) {
         $new_paths = $paths[0..$index] + $dir + $( if ($index -lt $paths.count) { $paths[$($index+1)..$paths.count] } )
         $paths = $new_paths
     }
-    # write-host -fore cyan "[paths]`n$paths"
-    # write-host -fore cyan "paths.count = $($paths.count)"
+    # trace "ensure_in_path(): [paths]`n$paths"
+    # trace "ensure_in_path(): paths.count = $($paths.count)"
     env 'path' -t $global $( $paths -join ';' )
 
     # this session / current process
     $null, $env:path = strip_path $env:path $dir
     $paths = split_pathlist $env:path
-    # write-host -fore cyan "[paths]`n$paths"
-    # write-host -fore cyan "paths.count = $($paths.count)"
+    # trace "ensure_in_path(): [paths]`n$paths"
+    # trace "ensure_in_path(): paths.count = $($paths.count)"
     if ($paths.count -lt 1) { $paths = @( $dir ) }
     else {
         $index = [System.Array]::IndexOf( $paths, @( @( $paths ) -imatch $('^'+[regex]::escape($shim_dir_parent)) )[0] )
@@ -392,8 +393,8 @@ function ensure_in_path($dir, $global) {
         $new_paths = $paths[0..$index] + $dir + $( if ($index -lt $paths.count) { $paths[$($index+1)..$paths.count] } )
         $paths = $new_paths
     }
-    # write-host -fore cyan "[paths]`n$paths"
-    # write-host -fore cyan "paths.count = $($paths.count)"
+    # trace "ensure_in_path(): [paths]`n$paths"
+    # trace "ensure_in_path(): paths.count = $($paths.count)"
     env 'path' $( $paths -join ';' )
 }
 
@@ -471,7 +472,7 @@ $default_aliases = @{
 function reset_alias($name, $value) {
     if($existing = get-alias $name -ea SilentlyContinue | where-object { $_.options -match 'readonly' }) {
         if($existing.definition -ne $value) {
-            write-host "alias $name is read-only; can't reset it" -f darkyellow
+            warn "alias $name is read-only; can't reset it"
         }
         return # already set
     }
@@ -517,14 +518,6 @@ function CMD_SET_encode_arg {
         }
     }
 
-function app($app) {
-    $app = [string]$app
-    if ($app -match '^([^/\\]+)(?:/|\\)([^/\\]+)$') {
-        return $matches[2], $matches[1]
-    }
-    $app, $null
-}
-
 function ConvertFrom-JsonNET {
     # scratch implementation, based on ideas/concepts from Brian Rogers and bradgonesurfing [1]
     # [1]: http://stackoverflow.com/questions/5546142/how-do-i-use-json-net-to-deserialize-into-nested-recursive-dictionary-and-list/19140420#19140420
@@ -538,21 +531,21 @@ function ConvertFrom-JsonNET {
             # avoid `import-module` which maintains an open handle on any loaded assembly .dll file until the parent assembly is shut down
             # instead, use NET `[Reflection.Assembly]::Load(...)` to load the assembly from an in-memory copy
             [System.Reflection.Assembly]::Load( [System.IO.File]::ReadAllBytes($(resolve-path $(rootrelpath "vendor\Newtonsoft.Json\lib\net20\$json_module_name.dll"))) ) | out-null
-            # write-host -fore darkcyan "$json_module_name loaded"
+            # trace "ConvertFrom-JsonNET(): $json_module_name loaded"
         }
         $f_ToObject = { param( $token )
             $type = $token.psobject.TypeNames -imatch "Newtonsoft\..*(JObject|JArray|JProperty|JValue)"
             if (-not $type) { $type = "DEFAULT" }
-            #write-debug "ToObject::$($token.psobject.TypeNames)::$type::'$($token.name)'"
+            # trace "ConvertFrom-JsonNET(): ToObject::$($token.psobject.TypeNames)::$type::'$($token.name)'"
             switch ( $type )
             {
                 "Newtonsoft.Json.Linq.JObject"
                     {
-                    #write-debug "object::$($token.psobject.TypeNames)::'$($token.name)'=$($token.value)"
+                    # trace "ConvertFrom-JsonNET(): object::$($token.psobject.TypeNames)::'$($token.name)'=$($token.value)"
                     $children = $token.children()
                     $h = @{}
                     $children | ForEach-Object {
-                        #write-debug "object/child::$($_.psobject.TypeNames)::'$($_.name)'[$($_.count)]"
+                        # trace "ConvertFrom-JsonNET(): object/child::$($_.psobject.TypeNames)::'$($_.name)'[$($_.count)]"
                         if ($_.psobject.TypeNames -imatch "Newtonsoft\..*(JValue)") {
                             $h[$token.name] = $_.value
                             }
@@ -563,10 +556,10 @@ function ConvertFrom-JsonNET {
                     }
                 "Newtonsoft.Json.Linq.JArray"
                     {
-                    #write-debug "array::$($token.psobject.TypeNames)::'$($token.name)'=$($token.value)"
+                    # trace "ConvertFrom-JsonNET(): array::$($token.psobject.TypeNames)::'$($token.name)'=$($token.value)"
                     $a = @()
                     $token | ForEach-Object {
-                        #write-debug "array/token::$($_.psobject.TypeNames)::'$($_.name)'=$($_.value)"
+                        # trace "ConvertFrom-JsonNET(): array/token::$($_.psobject.TypeNames)::'$($_.name)'=$($_.value)"
                         if ($_.psobject.TypeNames -imatch "Newtonsoft\..*(JValue)") {
                             $a += , $_.value
                             }
@@ -605,7 +598,7 @@ function ConvertTo-JsonNET {
             # avoid `import-module` which maintains an open handle on any loaded assembly .dll file until the parent assembly is shut down
             # instead, use NET `[Reflection.Assembly]::Load(...)` to load the assembly from an in-memory copy
             [System.Reflection.Assembly]::Load( [System.IO.File]::ReadAllBytes($(resolve-path $(rootrelpath "vendor\Newtonsoft.Json\lib\net20\$json_module_name.dll"))) ) | out-null
-            # write-host -fore darkcyan "$json_module_name loaded"
+            # trace "ConvertTo-JsonNET(): $json_module_name loaded"
         }
         $list = New-Object System.Collections.Generic.List[object]
     }
@@ -627,4 +620,67 @@ function ConvertTo-JsonNET {
         $s.Serialize( $writer, $list )
         $sw.ToString()
     }
+}
+
+# function app($app) {
+#     $appname = [string]$app
+#     if ($appname -match '^([^/\\]+)?(?:/|\\)([^/\\]+)$') {
+#         # BUCKET/APPNAME
+#         return $matches[2], $matches[1]
+#     }
+#     $appname, $null
+# }
+
+# function app_specs($app_spec) {
+#     $app_spec = [string]$app_spec
+#     if ($app_spec -match '^([^/\\]+)?(?:/|\\)([^/\\]+)$') {
+#         # BUCKET/NAME
+#         return $matches[2], $matches[1]
+#     }
+#     $name = $app_spec
+#     # NAME, BUCKET, VERSION
+#     $name, $null, $null
+# }
+
+function app_parse($app) { ## returns NAME, BUCKET, VARIANT
+    # app == [BUCKET/]NAME[@VARIANT]
+    $app = [string]$app
+    $name = $null
+    $bucket = $null
+    $variant = $null
+    # trace "app_parse(): app = $app"
+    if ($app -match '^(?:([^/\\]+)?(?:/|\\))?([^/\\]+?)(?:@([^/\\]+))?$') {
+        $name, $bucket, $variant = $matches[2], $matches[1], $matches[3]
+    } else {
+        $name = $app
+    }
+    # trace "app_parse(): name, bucket, variant = $name, $bucket, $variant"
+    $name, $bucket, $variant
+}
+
+function app_name($app) {
+    $(app_parse $app)[0]
+}
+
+function app_bucket($app) {
+    $(app_parse $app)[1]
+}
+
+function app_variant($app) {
+    $(app_parse $app)[2]
+}
+
+function app_normalize($app) {
+    # trace "app_normalize(): app = $app"
+    $name, $bucket, $variant = app_parse $app
+    app $name $bucket $variant
+}
+
+function app($name, $bucket, $variant) {
+    # NOTE: $variant may be passed within $name ($variant should by $null, if so)
+    # trace "app(): name, bucket, variant = $name, $bucket, $variant"
+    $result = "$name"
+    if ($null -ne $bucket) { $result = "$bucket/$result" }
+    if ($null -ne $variant) { $result = "$result@$variant" }
+    $result
 }

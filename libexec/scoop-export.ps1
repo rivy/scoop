@@ -9,18 +9,18 @@
 
 reset_aliases
 
-$local = installed_apps $false | foreach-object { @{ name = $_; global = $false } }
-$global = installed_apps $true | foreach-object { @{ name = $_; global = $true } }
+$local = installed_apps $false | foreach-object { @{ app = $_; name = app_name $_; global = $false } }
+$global = installed_apps $true | foreach-object { @{ app = $_; name = app_name $_; global = $true } }
 
-$apps = @($local) + @($global)
+$results = @($local) + @($global)
 $count = 0
 
 # json
 # echo "{["
 
-if($apps) {
-    $apps | sort-object { $_.name } | where-object { !$query -or ($_.name -match $query) } | foreach-object {
-        $app = $_.name
+if($results) {
+    $results | sort-object { $_.name } | where-object { !$query -or ($_.name -match $query) } | foreach-object {
+        $app = $_.app
         $global = $_.global
         $ver = current_version $app $global
         $global_display = $null; if($global) { $global_display = '*global*'}

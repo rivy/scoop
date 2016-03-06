@@ -7,13 +7,18 @@ function nightly_version($date, $quiet = $false) {
 }
 
 function install_app($app, $architecture, $global) {
-    $app, $bucket = app $app
-    $app, $manifest, $bucket, $url = locate $app $bucket
+    # trace "install_app: app, architecture, global = $app, $architecture, $global"
+    $app = app_normalize $app
+    # trace "install_app: app = $app"
+    $app, $manifest, $url = locate $app
+    $app_name = app_name $app
+    # trace "install_app: app = $app"
+    # trace "install_app: app_name, manifest, url = $app_name, $manifest, $url"
     $use_cache = $true
     $check_hash = $true
 
     if(!$manifest) {
-        abort "couldn't find manifest for $app$(if($url) { " at the URL $url" })"
+        abort "couldn't find manifest for $app_name$(if($url) { " at the URL $url" })"
     }
 
     $version = $manifest.version
@@ -21,6 +26,7 @@ function install_app($app, $architecture, $global) {
     if($version -match '[^\w\.\-_]') {
         abort "manifest version has unsupported character '$($matches[0])'"
     }
+    ## toDO: ? warn if variant doesn't semi-match version?
 
     $is_nightly = $version -eq 'nightly'
     if ($is_nightly) {
@@ -33,11 +39,11 @@ function install_app($app, $architecture, $global) {
     if (-not $(env -t 'user' HOME)) {
         # future use
         env -t 'user' HOME $env:USERPROFILE
-        write-host -fore cyan "scoop/install: HOME environment variable set to '$env:USERPROFILE' (at 'user' level)"
+        info "scoop/install: HOME environment variable set to '$env:USERPROFILE' (at 'user' level)"
     }
     if (-not $(env HOME)) { env HOME $(env -t 'user' HOME) }     # current process
 
-    write-output "installing $app ($version)"
+    write-output "installing $app_name ($version)"
 
     $dir = ensure (versiondir $app $version $global)
 
@@ -54,13 +60,11 @@ function install_app($app, $architecture, $global) {
     post_install $manifest
 
     # save info for uninstall
-    save_installed_manifest $app $bucket $dir $url
-    # cleanse any PSObject properties from $bucket, making it a pure string, for conversion to JSON
-    # ToDO: track down where $bucket is originally polluted with the PSObject properties (in/for PowerShell v2)
-    $bucket = if ($null -eq $bucket) { $null } else { $("$bucket") }
+    save_installed_manifest $app $dir $url
+    $null, $bucket, $null = app_parse $app
     save_install_info @{ 'architecture' = $architecture; 'url' = $url; 'bucket' = $bucket } $dir
 
-    success "$app ($version) was installed successfully!"
+    success "$app_name ($version) was installed successfully!"
 
     show_notes $manifest
 }
@@ -74,24 +78,26 @@ function ensure_architecture($architecture_opt) {
 }
 
 function cache_path($app, $version, $url) {
-    "$(cachedir)\$app#$version#$($url -replace '[^\w\.\-]+', '_')"
+    "$(cachedir)\$(app_name $app)#$version#$($url -replace '[^\w\.\-]+', '_')"
 }
 
-function appname_from_url($url) {
+function app_from_url($url) {
     (split-path $url -leaf) -replace '.json$', ''
 }
 
-function locate($app, $bucket) {
+function locate($app) {
+    $app_name, $bucket, $variant = app_parse $app
     $manifest, $url = $null, $null
 
     # check if app is a url
-    if($app -match '^((ht)|f)tps?://') {
-        $url = $app
-        $app = appname_from_url $url
+    if($app_name -match '^((ht)|f)tps?://') {
+        $url = $app_name
+        $app = app_from_url $url
+        $app_name = app_name $app
         $manifest = url_manifest $url
     } else {
         # check buckets
-        $manifest, $bucket = find_manifest $app $bucket
+        $manifest, $bucket = find_manifest $app
 
         if(!$manifest) {
             # couldn't find app in buckets: check if it's a local path
@@ -99,13 +105,15 @@ function locate($app, $bucket) {
             if(!$path.endswith('.json')) { $path += '.json' }
             if(test-path $path) {
                 $url = "$(resolve-path $path)"
-                $app = appname_from_url $url
+                $app = app_from_url $url
+                $app_name = app_name $app
                 $manifest, $bucket = url_manifest $url
             }
         }
     }
 
-    $app, $manifest, $bucket, $url
+    $app = app $app_name $bucket $variant
+    $app, $manifest, $url
 }
 
 function dl_with_cache($app, $version, $url, $to, $cookies, $use_cache = $true) {
@@ -232,7 +240,7 @@ function dl_urls($app, $version, $manifest, $architecture, $dir, $use_cache = $t
             }
         } elseif(file_requires_7zip $fname) { # 7zip
             if(!(sevenzip_installed)) {
-                warn "aborting: you'll need to run 'scoop uninstall $app' to clean up"
+                warn "aborting: you'll need to run 'scoop uninstall $(app_name $app)' to clean up"
                 abort "7-zip is required. you can install it with 'scoop install 7zip'"
             }
             $extract_fn = 'extract_7zip'
@@ -437,7 +445,7 @@ function install_msi($fname, $dir, $msi) {
 
     $installed = run 'msiexec' $arg "running installer..." $continue_exit_codes
     if(!$installed) {
-        abort "installation aborted. you might need to run 'scoop uninstall $app' before trying again."
+        abort "installation aborted. you might need to run 'scoop uninstall $(app_name $app)' before trying again."
     }
     remove-item $logfile
     remove-item $msifile
@@ -480,7 +488,7 @@ function install_prog($fname, $dir, $installer) {
     } else {
         $installed = run $prog $arg "running installer..."
         if(!$installed) {
-            abort "installation aborted. you might need to run 'scoop uninstall $app' before trying again."
+            abort "installation aborted. you might need to run 'scoop uninstall $(app_name $app)' before trying again."
         }
         remove-item $prog
     }
@@ -546,28 +554,28 @@ function create_shims($manifest, $dir, $global) {
     }
 }
 
-function rm_shim($name, $shimdir) {
-    $shim = "$shimdir\$name.ps1"
+function rm_shim($fname, $shimdir) {
+    $shim = "$shimdir\$fname.ps1"
 
     if(!(test-path $shim)) { # handle no shim from failed install
-        warn "shim for $name is missing, skipping"
+        warn "shim for $fname is missing, skipping"
     } else {
-        write-output "removing shim for $name"
+        write-output "removing shim for $fname"
         remove-item $shim
     }
 
     # other shim types might be present
     '.exe', '.shim', '.cmd' | foreach-object {
-        if(test-path "$shimdir\$name$_") { remove-item "$shimdir\$name$_" }
+        if(test-path "$shimdir\$fname$_") { remove-item "$shimdir\$fname$_" }
     }
 }
 
 function rm_shims($manifest, $global) {
     $manifest.bin | where-object { $null -ne $_ } | foreach-object {
-        $target, $name, $null = shim_def $_
+        $target, $fname, $null = shim_def $_
         $shimdir = shimdir $global
 
-        rm_shim $name $shimdir
+        rm_shim $fname $shimdir
     }
 }
 
@@ -699,8 +707,7 @@ function show_notes($manifest) {
 
 function all_installed($apps, $global) {
     $apps | where-object {
-        $app, $null = app $_
-        installed $app $global
+        installed $_ $global
     }
 }
 
@@ -711,9 +718,9 @@ function prune_installed($apps) {
 
 # check whether the app failed to install
 function failed($app, $global) {
-    $ver = current_version $app $global
-    if(!$ver) { $false; return }
-    $info = install_info $app $ver $global
+    $version = current_version $app $global
+    if(!$version) { $false; return }
+    $info = install_info $app $version $global
     if(!$info) { $true; return }
     $false
 }
@@ -723,7 +730,7 @@ function ensure_none_failed($apps, $global) {
     if ($null -ne $apps) { foreach ($app in $apps) {
         if(failed $app $global) {
             $have_failure = $true
-            error "$app install failed previously. please uninstall it and try again."
+            error "'$(app_name $app)' install failed previously. please uninstall it and try again."
         }
     }}
     if ($have_failure) { exit 1 }

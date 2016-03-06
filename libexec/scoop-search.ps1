@@ -27,23 +27,22 @@ function bin_match($manifest, $query) {
 }
 
 function search_bucket($bucket, $query) {
-    $apps = apps_in_bucket $bucket | foreach-object {
-        @{ name = $_ }
-    }
+    # write-host "TRACE: search_bucket(): bucket, query = '$bucket', '$query'"
+    $results = apps_in_bucket $bucket | foreach-object { @{ app = $_ ; name = app_name $_ } }
 
     if($query) {
         try {
             $query = new-object regex $query
         } catch {
-            abort "invalid regular expression: $($_.exception.innerexception.message)"
+            abort "invalid regular expression ('$query'): $($_.exception.innerexception.message)"
         }
-        $apps = $apps | where-object {
-            if($_.name -match $query) { return $true }
-            $bin = bin_match (manifest $_.name $bucket) $query
+        $results = $results | where-object {
+            if($_.name -match $query) { $true; return }
+            $bin = bin_match (manifest $_.app) $query
             if($bin) { $_.bin = $bin; $true; return }
         }
     }
-    $apps | foreach-object { $_.version = (latest_version $_.name $bucket); $_ }
+    $results | foreach-object { $_.version = (latest_version $_.app); $_ }
 }
 
 function download_json($url) {
@@ -98,7 +97,9 @@ function search_remotes($query) {
     }
 }
 
+if ($args.count -eq 0) { $args = @( $null ) }
 if ($null -ne $args) { $args | foreach-object {
+    # write-host "TRACE: search: _ = '$_'"
     $query = $_
     @($null) + @(buckets) | foreach-object { # $null is main bucket
         $res = search_bucket $_ $query
@@ -106,15 +107,16 @@ if ($null -ne $args) { $args | foreach-object {
             $name = "$_"
             if(!$_) { $name = "main" }
 
-            "$name bucket:"
+            # "$name bucket:"
             $res | foreach-object {
-                $item = "  $($_.name) ($($_.version))"
+                $item = "$($_.app) ($($_.version))"
                 if($_.bin) { $item += " --> includes '$($_.bin)'" }
                 $item
             }
-            ""
+            # ""
         }
     }
+    ""
 }}
 
 if (!$local_results -and !(github_ratelimit_reached)) {
