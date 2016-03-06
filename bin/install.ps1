@@ -21,7 +21,7 @@ $erroractionpreference='stop' # quit if anything goes wrong
 $repo_domain = 'github.com'
 $repo_owner = 'rivy'
 $repo_name = 'scoop'
-$repo_branch = 'master'
+$repo_branch = 'tr-wip'
 
 # read origin parameter (if supplied)
 if ($origin) {
