@@ -22,14 +22,15 @@ if($apps) {
         $app = $_.name
         $global = $_.global
         $ver = current_version $app $global
-            #$disabled = is_disabled $app $global
-            $disabled = $false
+            ## is_disabled() ...or instead, is_altered()? ... or check $(app # PATHs/shims expected) == $(PATHs/shims found)
+            $disabled = $true
+            $alterations = @()
+                $manifest = installed_manifest $app $ver $global
                 $current_paths = split_pathlist (env 'PATH')
                 # $global_paths = split_pathlist (env 'PATH' -t $true)
                 # $user_paths = split_pathlist (env 'PATH' -t $false)
                     $partially_disabled = $false
                     $partially_enabled = $false
-                        $manifest = installed_manifest $app $ver $global
                         # if ($manifest.env_add_path) { write-host -fore darkmagenta "$app`: $($manifest.env_add_path)" }
                         if ($null -ne $manifest.env_add_path) { $manifest.env_add_path | where-object { $null -ne $_ } | foreach-object {
                             $path_base = "$(versiondir $app $ver $global)\$_"
@@ -38,15 +39,11 @@ if($apps) {
                             # write-host -fore darkmagenta "path_base_resolved = $path_base_resolved"
                             $path = normalize_path $path_base_resolved
                             # write-host -fore darkmagenta "path = $path"
-                            $enabled = $false
-                            if ( $path -and $( $current_paths | where-object { $_ -and $_ -ieq $path } ) ) { $enabled = $true }
-                            # if ( $path -and $global -and $( $global_paths | where-object { $_ -and $_ -ieq $path } ) ) { $enabled = $true }
-                            # if ( $path -and -not $global -and $( $user_paths | where-object { $_ -and $_ -ieq $path } ) ) { $enabled = $true }
-                            if ( $enabled ) { $partially_enabled = $true }
-                            if ( -not $enabled ) { $partially_disabled = $true }
+                            if ( $path -and $( $current_paths | where-object { $_ -and $_ -ieq $path } ) ) { $partially_enabled = $true } else { $partially_disabled = $true }
                             }}
-                    if ( $partially_disabled ) { $disabled = 'PATH entries missing' }
-                    if ( $partially_disabled -and $partially_enabled ) { $disabled = 'PATH entries incomplete' }
+                    if ( $partially_disabled ) { $alterations += @( 'PATH entries: ' + $(if ( $partially_enabled ) { 'incomplete' } else { 'missing' }) ) }
+                    $disabled = $disabled -and -not $partially_enabled
+
                     $partially_disabled = $false
                     $partially_enabled = $false
                         if ($null -ne $manifest.bin) { $manifest.bin | where-object { $null -ne $_ } | foreach-object {
@@ -56,19 +53,16 @@ if($apps) {
                             # write-host -fore darkmagenta "shim = $shim"
                             if ( test-path $shim ) { $partially_enabled = $true } else { $partially_disabled = $true }
                             }}
-                    if ( $partially_disabled ) {
-                        if ( $partially_enabled ) { $disabled = $(if ($disabled) { "$disabled, "} else {""}) + "shims incomplete" }
-                        else { $disabled = $(if ($disabled) { "$disabled, "} else {""}) + "shims missing" }
-                        }
+                    if ( $partially_disabled ) { $alterations += @( 'shims: ' + $( if ( $partially_enabled ) { 'incomplete' } else { 'missing' } ) ) }
+                    $disabled = $disabled -and -not $partially_enabled
+
         $annotations = @()
         if ( $global ) { $annotations += "global" }
-        if ( $disabled ) { $annotations += $( if ( "$disabled" -eq "true" ) { "* disabled" } else { "* disabled ($disabled)"} ) }
-        # $disabled_display = $null; if ($disabled ) { $disabled_display = "* DISABLED ($disabled)" }
-        # $global_display = $null; if($global) { $global_display = '*global*'}
+        if ( $disabled ) { $annotations += "* disabled" } elseif ( $alterations ) { $annotations += $('* altered (' + ($alterations -join ', ') + ')') }
 
         $color = $host.UI.RawUI.ForegroundColor
         if ( $global ) { $color = 'yellow' }
-        if ( $disabled ) { $color = 'darkyellow' }
+        if ( $disabled -or $alterations ) { $color = 'darkyellow' }
         write-host -fore $color $("  $app ($ver) " + $(if ($annotations.count -gt 0) { "[$($annotations -join ', ')]" }))
     }
     write-host ""
