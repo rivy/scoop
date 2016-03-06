@@ -28,17 +28,16 @@
 
 reset_aliases
 
-function ensure_none_installed($apps, $global) {
-    $app = @(all_installed $apps $global)[0] # might return more than one; just get the first
-    if($app) {
-        $global_flag = $null; if($global){$global_flag = ' --global'}
-
-        $version = @(versions $app $global)[-1]
-        if(!(install_info $app $version $global)) {
-            abort "it looks like a previous installation of $app failed.`nrun 'scoop uninstall $app$global_flag' before retrying the install."
+function warn_installed($apps, $global) {
+    $apps = @(all_installed $apps $global)
+    if ($null -ne $apps) { $apps | foreach-object {
+        $app = $_
+        if($app) {
+            $version = @(versions $app $global)[-1]
+            warn "$app ($version) is already installed. use 'scoop update $app$global_flag' to update to a newer version."
         }
-        abort "$app ($version) is already installed.`nuse 'scoop update $app$global_flag' to install a new version."
-    }
+
+    }}
 }
 
 $opt, $apps, $err = getopt $args 'ga:' 'global', 'arch='
@@ -53,7 +52,8 @@ if($global -and !(is_admin)) {
     'ERROR: you need admin rights to install global apps'; exit 1
 }
 
-ensure_none_installed $apps $global
+ensure_none_failed $apps $global
+warn_installed $apps $global
 
 $apps = install_order $apps $architecture # adds dependencies
 ensure_none_failed $apps $global
