@@ -29,11 +29,14 @@ function is_admin {
 }
 
 # messages
-function abort($msg) { write-host $msg -f darkred; exit 1 }
 function error($msg) { write-host $msg -f darkred }
 function warn($msg) { write-host $msg -f darkyellow }
 function info($msg) { write-host $msg -f darkcyan }
 function success($msg) { write-host $msg -f darkgreen }
+
+# abort
+function abort($msg, $exit_code=-1) { error $msg; exit $exit_code }
+
 
 # dirs
 function cachedir() { "$scoopdir\cache" } # always local
