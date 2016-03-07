@@ -1,5 +1,5 @@
 # Usage: scoop disable <app> [options]
-# Summary: Uninstall an app
+# Summary: Disable an app without removing it
 # Help: e.g. scoop disable git
 
 . "$($MyInvocation.MyCommand.Path | Split-Path | Split-Path)\lib\core.ps1"
