@@ -5,11 +5,14 @@ function latest_version($app, $url) {
 function current_version($app, $global) {
     @(versions $app $global)[-1]
 }
-function versions($app, $global) {
+function versions($app, $global=$null) {
+    if($null -eq $global) { @( versions $app $true ); @( versions $app $false ); return }
     $appdir = appdir $app $global
     if(!(test-path $appdir)) { @(); return }
 
-    sort_versions ($(get-childitem $appdir | where-object { $_.PSIsContainer }) | foreach-object { $_.name })
+    $variant = app_variant $app
+    if (-not $variant) { $variant = '*' }
+    @( sort_versions ($(get-childitem $appdir | where-object { $_.PSIsContainer }) | foreach-object { $_.name }) ) -like $variant
 }
 
 function version($ver) {

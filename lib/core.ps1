@@ -51,12 +51,17 @@ function versiondir($app, $version, $global) { "$(appdir $app $global)\$version"
 function sanitary_path($path) { [regex]::replace($path, "[/\\?:*<>|]", "") }
 function installed($app, $global=$null) {
     if($null -eq $global) { (installed $app $true) -or (installed $app $false); return }
-    test-path (appdir $app $global)
+    @(versions $app $global).count -gt 0
 }
 function installed_apps($global) {
     $dir = appsdir $global
     if(test-path $dir) {
-        get-childitem $dir | where-object { $_.psiscontainer -and $_.name -ne 'scoop' } | foreach-object { app $_.name }
+        $app_names = get-childitem $dir | where-object { $_.psiscontainer -and $_.name -ne 'scoop' } | foreach-object { $_.name }
+        if ($null -ne $app_names) { $app_names | foreach-object {
+            $app = $_
+            $versions = @(versions (app $app) $global)
+            if ($null -ne $versions) { $versions | foreach-object { app $app $null $_ } }
+        }}
     }
 }
 

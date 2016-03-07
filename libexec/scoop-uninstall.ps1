@@ -25,46 +25,46 @@ if ($null -ne $args) { $args | foreach-object {
         'ERROR: you need admin rights to disable global apps'; exit 1
     }
 
-    $version = current_version $app $global
-    "uninstalling $app ($version)"
+    $versions = @( versions $app )
+    if ($null -ne $versions) { $versions | foreach-object {
+        $version = $_
+        $app_name = app_name $app
+        $global = installed $app $true
+        "uninstalling $app_name ($version)"
 
-    $dir = versiondir $app $version $global
-    try {
-        test-path $dir -ea stop | out-null
-    } catch [unauthorizedaccessexception] {
-        abort "access denied: $dir. you might need to restart"
-    }
+        $dir = versiondir $app $version $global
+        try {
+            test-path $dir -ea stop | out-null
+        } catch [unauthorizedaccessexception] {
+            abort "access denied: $dir. you might need to restart"
+        }
 
-    $manifest = installed_manifest $app $version $global
-    $install = install_info $app $version $global
-    $architecture = $install.architecture
+        $manifest = installed_manifest $app $version $global
+        $install = install_info $app $version $global
+        $architecture = $install.architecture
 
-    run_uninstaller $manifest $architecture $dir
-    rm_shims $manifest $global
-    env_rm_path $manifest $dir $global
-    env_rm $manifest $global
+        run_uninstaller $manifest $architecture $dir
+        rm_shims $manifest $global
+        env_rm_path $manifest $dir $global
+        env_rm $manifest $global
 
-
-    try { remove-item -r $dir -ea stop -force }
-    catch { abort "couldn't remove $(friendly_path $dir): it may be in use" }
-
-    # remove older versions
-    $old = @(versions $app $global)
-    if ($null -ne $old) { foreach ($oldver in $old) {
-        "removing older version, $oldver"
-        $dir = versiondir $app $oldver $global
-        try { remove-item -r -force -ea stop $dir }
+        try { remove-item -r $dir -ea stop -force ; info "'$dir' was removed"}
         catch { abort "couldn't remove $(friendly_path $dir): it may be in use" }
     }}
 
-    if(@(versions $app).length -eq 0) {
-        $appdir = appdir $app $global
-        try {
-            # if last install failed, the directory seems to be locked and this
-            # will throw an error about the directory not existing
-            remove-item -r $appdir -ea stop -force
-        } catch {
-            if((test-path $appdir)) { throw } # only throw if the dir still exists
+    @($true, $false) | foreach-object {
+        $global = $_
+        $app_name = app_name $app
+        if(@(versions (app $app_name) $global).count -eq 0) {
+            $appdir = appdir (app $app_name) $global
+            try {
+                # if last install failed, the directory seems to be locked and this
+                # will throw an error about the directory not existing
+                remove-item -r $appdir -ea stop -force
+                info "'$appdir' was removed"
+            } catch {
+                if((test-path $appdir)) { throw } # only throw if the dir still exists
+            }
         }
     }
 
