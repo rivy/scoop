@@ -369,7 +369,7 @@ function ensure_in_path($dir, $global) {
     # write-host -fore cyan "paths.count = $($paths.count)"
     if ($paths.count -lt 1) { $paths = @( $dir ) }
     else {
-        $index = [System.Array]::FindIndex($paths, [Predicate[string]]{ $args[0] -imatch $('^'+[regex]::escape($shim_dir_parent)) })
+        $index = [System.Array]::IndexOf( $paths, @( @( $paths ) -imatch $('^'+[regex]::escape($shim_dir_parent)) )[0] )
         if ( $index -lt 0 ) { $index = $paths.count }
         if ( $paths[$index] -ine $shim_dir ) { $index -= 1 }    # place after $shim_dir but before any other scoop dir
         $new_paths = $paths[0..$index] + $dir + $( if ($index -lt $paths.count) { $paths[$($index+1)..$paths.count] } )
@@ -386,7 +386,7 @@ function ensure_in_path($dir, $global) {
     # write-host -fore cyan "paths.count = $($paths.count)"
     if ($paths.count -lt 1) { $paths = @( $dir ) }
     else {
-        $index = [System.Array]::FindIndex($paths, [Predicate[string]]{ $args[0] -imatch $('^'+[regex]::escape($shim_dir_parent)) })
+        $index = [System.Array]::IndexOf( $paths, @( @( $paths ) -imatch $('^'+[regex]::escape($shim_dir_parent)) )[0] )
         if ( $index -lt 0 ) { $index = $paths.count }
         if ( $paths[$index] -ine $shim_dir ) { $index -= 1 }    # place after $shim_dir but before any other scoop dir
         $new_paths = $paths[0..$index] + $dir + $( if ($index -lt $paths.count) { $paths[$($index+1)..$paths.count] } )
