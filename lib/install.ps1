@@ -48,7 +48,7 @@ function install_app($app, $architecture, $global, $use_cache, $allow_insecure) 
 
     $fname = dl_urls $app $version $manifest $architecture $dir $use_cache $check_hash $allow_insecure
     unpack_inno $fname $manifest $dir
-    pre_install $manifest
+    pre_install $manifest $architecture
     run_installer $fname $manifest $architecture $dir
     ensure_install_dir_not_in_path $dir $global
     create_shims $manifest $dir $global $architecture
@@ -56,7 +56,7 @@ function install_app($app, $architecture, $global, $use_cache, $allow_insecure) 
     if($global) { ensure_scoop_in_path $global } # can assume local scoop is in path
     env_add_path $manifest $dir $global
     env_set $manifest $dir $global
-    post_install $manifest
+    post_install $manifest $architecture
 
     # save info for uninstall
     save_installed_manifest $app $dir $url
@@ -713,8 +713,8 @@ function env_rm($manifest, $global) {
     }
 }
 
-function pre_install($manifest) {
-    $pre_install_script = $manifest.pre_install
+function pre_install($manifest, $architecture) {
+    $pre_install_script = arch_specific 'pre_install' $manifest $architecture
     $pre_install_script = $( $pre_install_script | where-object { $null -ne $_ } )
     if ( $pre_install_script.length -gt 0 ) {
         write-output "running pre-install script..."
@@ -724,8 +724,8 @@ function pre_install($manifest) {
     }
 }
 
-function post_install($manifest) {
-    $post_install_script = $manifest.post_install
+function post_install($manifest, $architecture) {
+    $post_install_script = arch_specific 'post_install' $manifest $architecture
     $post_install_script = $( $post_install_script | where-object { $null -ne $_ } )
     if ( $post_install_script.length -gt 0 ) {
         write-output "running post-install script..."
