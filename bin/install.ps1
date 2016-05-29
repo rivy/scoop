@@ -58,10 +58,14 @@ switch -wildcard ($repo_domain) {
 
 write-host "installing from " -nonewline; write-host "${repo_domain}:${repo_owner}/${repo_name}@${repo_branch}" -f yellow
 
+# get required functions
 # get core functions
 $core_url = $($repo_base_raw+'/lib/core.ps1')
 write-output 'initializing...'
 . $( [ScriptBlock]::Create((new-object net.webclient).downloadstring($core_url)) )
+# get version functions ## `installed` from core.ps1 requires versions.ps1 ## ToDO: ? move versions into `core.ps1`
+$versions_url = $($repo_base_raw+'/lib/versions.ps1')
+. $( [ScriptBlock]::Create((new-object net.webclient).downloadstring($versions_url)) )
 
 # prep
 if(installed 'scoop') {
