@@ -1,3 +1,5 @@
+. "$($MyInvocation.MyCommand.Path | Split-Path | Split-Path)\lib\core.ps1"
+
 # resolve dependencies for the supplied apps, and sort into the correct order
 function install_order($apps, $arch) {
     # trace "install_order(): () = [$apps], $arch"
@@ -7,9 +9,14 @@ function install_order($apps, $arch) {
         $deps = @( deps $app $arch )
         # trace "install_order(): deps = [$deps]"
         if ($null -ne $deps) { foreach ($dep in $deps) {
-            if($res -notcontains $dep) { $res += $dep }
+            $app_variant = @( matching_apps $apps $dep )[0];
+            # trace "install_order(): app_variant = $app_variant"
+            if ($null -ne $app_variant) { $dep = $app_variant }
+            # trace "install_order(): dep = $dep"
+            if (-not ( matching_apps $res $dep )) { $res += @( install_order $dep $arch ) }
         }}
-        if($res -notcontains $app) { $res += $app }
+        if (-not ( matching_apps $res $app )) { $res += $app }
+        # trace "install_order(): [app=$app] res = [$res]"
     }}
     $res
     # trace "install_order():DONE: res = [$res]"

@@ -689,3 +689,19 @@ function app($name, $bucket, $variant) {
     if ($null -ne $variant) { $result = "$result@$variant" }
     $result
 }
+
+function matching_apps($apps, $app) {
+    # trace "matching_apps(): () = [$apps], $app"
+    $matches = @()
+    $app_name = app_name( $app )
+    # trace "matching_apps(): appname('$app') = $app_name"
+    if ($null -ne $apps) { foreach ($a in $apps) {
+        # trace "matching_apps(): a = $a"
+        $n = app_name($a)
+        # trace "matching_apps(): app_name($a) = $n"
+        if ( $n -ieq $app_name ) { $matches += $a }
+        # trace "matching_apps(): [$a] => [$matches]"
+    }}
+    # trace "matching_apps():DONE: [$matches]"
+    $matches
+}
