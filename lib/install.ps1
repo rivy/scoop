@@ -78,7 +78,7 @@ function ensure_architecture($architecture_opt) {
 }
 
 function cache_path($app, $version, $url) {
-    "$(cachedir)\$(app_name $app)#$version#$($url -replace '[^\w\.\-]+', '_')"
+    "$(cachedir)\$(app_name $app)@$version@@$($url -replace '[^\w\.\-]+', '_')"
 }
 
 function app_from_url($url) {
@@ -131,57 +131,33 @@ function dl_with_cache($app, $version, $url, $to, $cookies, $use_cache = $true) 
 }
 
 function dl_progress($url, $to, $cookies) {
-    $wc = new-object net.webclient
-    $wc.headers.add('User-Agent', 'Scoop/1.0')
-    $wc.headers.add('Cookie', (cookie_header $cookies))
+    $uri = [system.uri]$url
 
-    if([console]::isoutputredirected) {
-        # can't set cursor position: just do simple download
-        $wc.downloadfile($url, $to)
-        return
+    $curl_options = @( "`"$uri`"" )
+    $curl_options += @( "-f", "-L" )
+
+    $curl_options += @( "-o", "`"$to`"" )
+
+    $show_progress = $false
+    if(-not [console]::isoutputredirected) {
+        # STDOUT is not redirected, use progress meter
+        $show_progress = $true
+        $curl_options += @( "-#" )
     }
+    if ($null -ne $cookies) { $curl_options += @( "--cookie", (cookie_header $cookies) ) }
 
-    $left = [console]::cursorleft
-    $top = [console]::cursortop
-    register-objectevent $wc -eventname downloadprogresschanged -sourceidentifier progress | out-null
-    register-objectevent $wc -eventname downloadfilecompleted -sourceidentifier complete | out-null
-    try {
-        $wc.downloadfileasync($url, $to)
-
-        function is_complete {
-            try {
-                $complete = get-event complete -ea stop
-                $err = $complete.sourceeventargs.error
-                if($err) { abort "$($err.message)" }
-                $true
-            } catch {
-                $false
-            }
+    $err_text = $null
+    $curl_exe = $(resolve-path $(rootrelpath "vendor\curl\curl.exe"))
+    & "$curl_exe" @( $curl_options ) 2>&1 |
+        %{
+        if( $show_progress -and ("$_" -match "\d+\.\d+%$")) {
+            write-host -nonewline ($matches[0] + ("`b" * $matches[0].Length))
+        } else { $err_text = "$_" }
         }
-
-        $last_p = -1
-        while(!(is_complete)) {
-            $e = wait-event progress -timeout 1
-            if(!$e) { continue } # avoid deadlock
-
-            remove-event progress
-            $p = $e.sourceeventargs.progresspercentage
-            if($p -ne $last_p) {
-                [console]::setcursorposition($left, $top)
-                write-host "$p%" -nonewline
-                $last_p = $p
-            }
-        }
-        remove-event complete
-    } finally {
-        remove-event *
-        unregister-event progress
-        unregister-event complete
-
-        $wc.cancelasync()
-        $wc.dispose()
-    }
-    [console]::setcursorposition($left, $top)
+    $err_code = $LASTEXITCODE;
+    # clear progress, if used
+    if ( $show_progress ) { write-host -nonewline ((" " * 6) + ("`b" * 6)) }
+    if ($err_code -ne 0) { write-host ""; abort "[$err_code]:$err_text" };
 }
 
 function dl_urls($app, $version, $manifest, $architecture, $dir, $use_cache = $true, $check_hash = $true) {
