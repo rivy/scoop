@@ -14,7 +14,7 @@ param($cmd, $app)
 reset_aliases
 
 function cacheinfo($file) {
-    $app, $version, $url = $file.name -split '#'
+    $app, $version, $null, $url = $file.name -split '@'
     $size = filesize $file.length
     @{ app=$app; version=$version; url=$url; size=$size }
 }
@@ -38,7 +38,7 @@ function filesize($length) {
 switch($cmd) {
     'rm' {
         if(!$app) { 'ERROR: <app> missing'; my_usage; exit 1 }
-        remove-item "$scoopdir\cache\$app#*"
+        remove-item "$scoopdir\cache\$app@*"
     }
     'show' {
         $files = @(get-childitem "$scoopdir\cache" | where-object { $_.name -match "^$app" })
