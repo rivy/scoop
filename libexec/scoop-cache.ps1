@@ -25,11 +25,11 @@ function filesize($length) {
     $kb = [math]::pow(2, 10)
 
     if($length -gt $gb) {
-        "{0:n1} GB" -f ($length / $gb)
+        "{0:n1} GiB" -f ($length / $gb)
     } elseif($length -gt $mb) {
-        "{0:n1} MB" -f ($length / $mb)
+        "{0:n1} MiB" -f ($length / $mb)
     } elseif($length -gt $kb) {
-        "{0:n1} KB" -f ($length / $kb)
+        "{0:n1} KiB" -f ($length / $kb)
     } else {
         "$($length) B"
     }
@@ -44,9 +44,9 @@ switch($cmd) {
         $files = @(get-childitem "$scoopdir\cache" | where-object { $_.name -match "^$app" })
         $total_length = ($files | measure-object length -sum).sum
 
-        $f_app  = @{ expression={"$($_.app) ($($_.version))" }}
-        $f_url  = @{ expression={$_.url};alignment='right'}
-        $f_size = @{ expression={$_.size}; alignment='right'}
+        $f_app  = @{ name="app"; expression={"$($_.app) ($($_.version))" }}
+        $f_url  = @{ name="(approx) URL"; expression={$_.url}; alignment='right'}
+        $f_size = @{ name="size"; expression={$_.size}; alignment='right'}
 
         if ($null -ne $files) { $files | foreach-object { cacheinfo $_ } |
             % { new-object PSObject -Property $_ } |
