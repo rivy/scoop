@@ -48,8 +48,11 @@ switch($cmd) {
         $f_url  = @{ expression={$_.url};alignment='right'}
         $f_size = @{ expression={$_.size}; alignment='right'}
 
-
-        $files | foreach-object { cacheinfo $_ } | format-table $f_size, $f_app, $f_url -auto -hide
+        if ($null -ne $files) { $files | foreach-object { cacheinfo $_ } |
+            % { new-object PSObject -Property $_ } |
+            format-table $f_size, $f_app, $f_url -auto |
+            out-string -stream | ? {$_}     ## remove blank lines
+        }
 
         "total: $($files.length) $(pluralize $files.length 'file' 'files'), $(filesize $total_length)"
     }
