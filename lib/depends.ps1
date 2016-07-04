@@ -15,7 +15,7 @@ function install_order($apps, $arch) {
             # trace "install_order(): dep = $dep"
             if (-not ( matching_apps $res $dep )) { $res += @( install_order $dep $arch ) }
         }}
-        if (-not ( matching_apps $res $app )) { $res += $app }
+        if($res -notcontains $app) { $res += $app } # match full app_variant for user-supplied apps
         # trace "install_order(): [app=$app] res = [$res]"
     }}
     $res
