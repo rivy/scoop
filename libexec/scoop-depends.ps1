@@ -10,8 +10,6 @@
 . "$($MyInvocation.MyCommand.Path | Split-Path | Split-Path)\lib\config.ps1"
 . "$($MyInvocation.MyCommand.Path | Split-Path | Split-Path)\lib\help.ps1"
 
-reset_aliases
-
 $opt, $apps, $err = getopt $args 'a:' 'arch='
 $app = $apps[0]
 

@@ -2,8 +2,6 @@ write-host -f darkyellow "[$(split-path -leaf $MyInvocation.MyCommand.Path)]"
 
 . "$($MyInvocation.MyCommand.Path | Split-Path | Split-Path)\libexec\scoop-alias.ps1" | out-null
 
-reset_aliases
-
 describe "add_alias" {
   mock shimdir { "TestDrive:\shim" }
   mock set_config { }

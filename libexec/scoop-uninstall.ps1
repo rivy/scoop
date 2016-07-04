@@ -9,8 +9,6 @@
 . $(rootrelpath "lib\versions.ps1")
 . $(rootrelpath "lib\getopt.ps1")
 
-reset_aliases
-
 if(!$args) { 'ERROR: <app> missing'; my_usage; exit 1 }
 
 if ($null -ne $args) { $args | foreach-object {

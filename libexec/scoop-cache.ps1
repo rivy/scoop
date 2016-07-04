@@ -11,8 +11,6 @@ param($cmd, $app)
 
 . "$($MyInvocation.MyCommand.Path | Split-Path | Split-Path)\lib\help.ps1"
 
-reset_aliases
-
 function cacheinfo($file) {
     $app, $version, $null, $url = $file.name -split '@'
     $size = filesize $file.length

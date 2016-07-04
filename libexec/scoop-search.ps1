@@ -12,8 +12,6 @@
 . $(rootrelpath "lib\manifest.ps1")
 . $(rootrelpath "lib\versions.ps1")
 
-reset_aliases
-
 function bin_match($manifest, $query) {
     if(!$manifest.bin) { $false; return }
     if ($null -ne $manifest.bin) { foreach($bin in $manifest.bin) {

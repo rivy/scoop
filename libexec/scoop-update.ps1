@@ -21,8 +21,6 @@
 . $(rootrelpath "lib\depends.ps1")
 . $(rootrelpath "lib\config.ps1")
 
-reset_aliases
-
 $update_restart = [int]$env:SCOOP__updateRestart
 $args_initial = $args
 

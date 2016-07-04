@@ -457,52 +457,6 @@ function pluralize($count, $singular, $plural) {
     if($count -eq 1) { $singular } else { $plural }
 }
 
-# for dealing with user aliases
-$default_aliases = @{
-    'cp' = 'copy-item'
-    'echo' = 'write-output'
-    'gc' = 'get-content'
-    'gci' = 'get-childitem'
-    'gcm' = 'get-command'
-    'iex' = 'invoke-expression'
-    'ls' = 'get-childitem'
-    'mkdir' = { new-item -type directory @args }
-    'mv' = 'move-item'
-    'rm' = 'remove-item'
-    'sc' = 'set-content'
-    'select' = 'select-object'
-    'sls' = 'select-string'
-}
-
-function reset_alias($name, $value) {
-    if($existing = get-alias $name -ea SilentlyContinue | where-object { $_.options -match 'readonly' }) {
-        if($existing.definition -ne $value) {
-            warn "alias $name is read-only; can't reset it"
-        }
-        return # already set
-    }
-    if($value -is [scriptblock]) {
-        new-item -path function: -name "script:$name" -value $value | out-null
-        return
-    }
-
-    set-alias $name $value -scope script -option allscope
-}
-
-function reset_aliases() {
-    # for aliases where there's a local function, re-alias so the function takes precedence
-    $aliases = get-alias | where-object { $_.options -notmatch 'readonly|allscope' } | foreach-object { $_.name }
-    get-childitem function: | foreach-object {
-        $fn = $_.name
-        if($aliases -contains $fn) {
-            set-alias $fn local:$fn -scope script
-        }
-    }
-
-    # set default aliases
-    $default_aliases.keys | foreach-object { reset_alias $_ $default_aliases[$_] }
-}
-
 function CMD_SET_encode_arg {
     # CMD_SET_encode_arg( @ )
     # encode string(s) to equivalent CMD command line interpretable version(s) as arguments for SET
