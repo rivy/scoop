@@ -46,7 +46,7 @@ function dep_resolve($app, $arch, $resolved, $unresolved) {
     # $app, $bucket = app $query
     # $null, $manifest, $null, $null = locate $app $bucket
     $null, $manifest, $null, $null = locate $app
-    if(!$manifest) { abort "couldn't find manifest for $appname" }
+    if(!$manifest) { abort "couldn't find manifest for '$app'" }
 
     $deps = @(install_deps $manifest $arch) + @(runtime_deps $manifest) | select-object -uniq
     # trace "dep_resolve(): deps = [$deps]"
