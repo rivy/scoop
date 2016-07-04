@@ -9,7 +9,7 @@
 . $(rootrelpath "lib\versions.ps1")
 . $(rootrelpath "lib\getopt.ps1")
 
-if(!$args) { 'ERROR: <app> missing'; my_usage; exit 1 }
+if(!$args) { error 'ERROR: <app> argument missing'; my_usage; exit 1 }
 
 if ($null -ne $args) { $args | foreach-object {
     $app = $_
@@ -20,7 +20,7 @@ if ($null -ne $args) { $args | foreach-object {
 
     $global = installed $app $true
     if($global -and !(is_admin)) {
-        'ERROR: you need admin rights to disable global apps'; exit 1
+        error 'ERROR: you need admin rights to disable global apps'; exit 1
     }
 
     $versions = @( versions $app )
@@ -34,7 +34,7 @@ if ($null -ne $args) { $args | foreach-object {
         try {
             test-path $dir -ea stop | out-null
         } catch [unauthorizedaccessexception] {
-            abort "access denied: $dir. you might need to restart"
+            abort "access denied: '$dir'; you might need to restart"
         }
 
         $manifest = installed_manifest $app $version $global
@@ -46,8 +46,8 @@ if ($null -ne $args) { $args | foreach-object {
         env_rm_path $manifest $dir $global
         env_rm $manifest $global
 
-        try { remove-item -r $dir -ea stop -force ; info "'$dir' was removed"}
-        catch { abort "couldn't remove $(friendly_path $dir): it may be in use" }
+        try { remove-item -r $dir -ea stop -force ; info "'$dir' was removed" }
+        catch { abort "couldn't remove '$dir'; it may be in use" }
     }}
 
     @($true, $false) | foreach-object {
@@ -66,7 +66,7 @@ if ($null -ne $args) { $args | foreach-object {
         }
     }
 
-    success "$app was uninstalled"
+    if ($versions.count -gt 0) { success "'$app' was uninstalled" } else { warn "'$app' was not found" }
 }}
 
 exit 0
