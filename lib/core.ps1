@@ -74,10 +74,6 @@ function fullpath($path) { # should be ~ rooted
     $executionContext.sessionState.path.getUnresolvedProviderPathFromPSPath($path)
 }
 function rootrelpath($path) { join-path $projectrootpath $path } # relative to project main directory
-function friendly_path($path) {
-    $h = $home; if(!$h.endswith('\')) { $h += '\' }
-    "$path" -replace ([regex]::escape($h)), "~\"
-}
 function is_local($path) {
     ($path -notmatch '^https?://') -and (test-path $path)
 }
@@ -415,7 +411,7 @@ function remove_from_path($dir,$global) {
     # future sessions
     $was_in_path, $newpath = strip_path (env 'path' -t $global) $dir
     if($was_in_path) {
-        write-output "removing $(friendly_path $dir) from your path"
+        write-output "removing '$dir' from your path"
         env 'path' -t $global $newpath
     }
 

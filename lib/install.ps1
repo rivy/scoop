@@ -430,7 +430,7 @@ function install_msi($fname, $dir, $msi) {
 function extract_msi($path, $to) {
     $logfile = "$(split-path $path)\msi.log"
     $ok = run 'msiexec' @('/a', "`"$path`"", '/qn', "TARGETDIR=`"$to`"", "/lwe `"$logfile`"")
-    if(!$ok) { abort "failed to extract files from $path.`nlog file: $(friendly_path $logfile)" }
+    if(!$ok) { abort "failed to extract files from $path.`nlog file: '$logfile'" }
     if(test-path $logfile) { remove-item $logfile }
 }
 
@@ -596,7 +596,7 @@ function ensure_install_dir_not_in_path($dir, $global) {
 
     $fixed, $removed = find_dir_or_subdir $path "$dir"
     if($removed) {
-        $removed | foreach-object { "installer added $(friendly_path $_) to path, removing"}
+        $removed | foreach-object { "installer added '$_' to path, removing"}
         env 'path' -t $global $fixed
     }
 
