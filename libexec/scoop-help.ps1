@@ -6,8 +6,6 @@ param($cmd)
 . $(rootrelpath "lib\commands.ps1")
 . $(rootrelpath "lib\help.ps1")
 
-reset_aliases
-
 function print_help($cmd) {
     $file = [System.IO.File]::ReadAllText($(resolve-path (command_path $cmd)))
 

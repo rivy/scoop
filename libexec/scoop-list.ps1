@@ -9,8 +9,6 @@ param($query)
 . $(rootrelpath "lib\buckets.ps1")
 . $(rootrelpath "lib\install.ps1")
 
-reset_aliases
-
 $local = installed_apps $false | foreach-object { @{ app = $_ ; name = app_name $_ ; global = $false } }
 $global = installed_apps $true | foreach-object { @{ app = $_ ; name = app_name $_ ; global = $true } }
 

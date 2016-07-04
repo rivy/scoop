@@ -15,8 +15,6 @@ $env:SCOOP__rootExecPath = $($MyInvocation.MyCommand.Path | Split-Path)
 . "$env:SCOOP__rootExecPath\..\lib\core.ps1"
 . $(rootrelpath 'lib\commands')
 
-reset_aliases
-
 $commands = commands
 
 if (@($null, '-h', '--help', '/?') -contains $__cmd) { exec 'help' $__args }

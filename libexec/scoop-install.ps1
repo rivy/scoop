@@ -26,8 +26,6 @@
 . $(rootrelpath "lib\depends.ps1")
 . $(rootrelpath "lib\config.ps1")
 
-reset_aliases
-
 function warn_installed($apps, $global) {
     $apps = @(all_installed $apps $global)
     if ($null -ne $apps) { $apps | foreach-object {

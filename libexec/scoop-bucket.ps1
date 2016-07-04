@@ -20,8 +20,6 @@ param($cmd, $name, $repo)
 . $(rootrelpath "lib\buckets.ps1")
 . $(rootrelpath "lib\help.ps1")
 
-reset_aliases
-
 $usage_add = "usage: scoop bucket add <name> [<repo>]"
 $usage_rm = "usage: scoop bucket rm <name>"
 

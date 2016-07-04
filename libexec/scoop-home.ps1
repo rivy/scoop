@@ -7,8 +7,6 @@ param($app)
 . $(rootrelpath "lib\manifest.ps1")
 . $(rootrelpath "lib\buckets.ps1")
 
-reset_aliases
-
 if($app) {
     $manifest, $bucket = find_manifest $app
     if($manifest) {
