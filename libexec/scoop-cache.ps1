@@ -49,9 +49,9 @@ switch($cmd) {
         $f_size = @{ name="size"; expression={$_.size}; alignment='right'}
 
         if ($null -ne $files) { $files | foreach-object { cacheinfo $_ } |
-            % { new-object PSObject -Property $_ } |
+            foreach-object { new-object PSObject -Property $_ } |
             format-table $f_size, $f_app, $f_url -auto |
-            out-string -stream | ? {$_}     ## remove blank lines
+            out-string -stream | where-object {$_}     ## remove blank lines
         }
 
         "total: $($files.length) $(pluralize $files.length 'file' 'files'), $(filesize $total_length)"

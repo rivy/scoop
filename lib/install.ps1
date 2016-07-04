@@ -149,7 +149,7 @@ function dl_progress($url, $to, $cookies) {
     $err_text = $null
     $curl_exe = $(resolve-path $(rootrelpath "vendor\curl\curl.exe"))
     & "$curl_exe" @( $curl_options ) 2>&1 |
-        %{
+        foreach-object {
         if( $show_progress -and ("$_" -match "\d+\.\d+%$")) {
             write-host -nonewline ($matches[0] + ("`b" * $matches[0].Length))
         } else { $err_text = "$_" }
