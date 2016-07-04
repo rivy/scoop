@@ -45,7 +45,7 @@ if ($null -ne $args) { $args | foreach-object {
 
 
     # try { remove-item -r $dir -ea stop -force }
-    # catch { abort "couldn't remove $(friendly_path $dir): it may be in use" }
+    # catch { abort "couldn't remove '$dir': it may be in use" }
 
     # # remove older versions
     # $old = @(versions $app $global)
@@ -53,7 +53,7 @@ if ($null -ne $args) { $args | foreach-object {
     #     "removing older version, $oldver"
     #     $dir = versiondir $app $oldver $global
     #     try { remove-item -r -force -ea stop $dir }
-    #     catch { abort "couldn't remove $(friendly_path $dir): it may be in use" }
+    #     catch { abort "couldn't remove '$dir': it may be in use" }
     # }}
 
     # if(@(versions $app).length -eq 0) {

@@ -91,14 +91,14 @@ function do_uninstall($app, $global) {
         remove-item -r -force $appdir -ea stop
     } catch {
         $errors = $true
-        warn "couldn't remove $(friendly_path $appdir): $_.exception"
+        warn "couldn't remove '$appdir': $_.exception"
     }
 }
 function rm_dir($dir) {
     try {
         remove-item -r -force $dir -ea stop
     } catch {
-        abort "couldn't remove $(friendly_path $dir): $_"
+        abort "couldn't remove '$dir': $_"
     }
 }
 
