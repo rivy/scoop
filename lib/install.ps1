@@ -134,6 +134,8 @@ function dl_progress($url, $to, $cookies) {
     $uri = [system.uri]$url
 
     $curl_options = @( "`"$uri`"" )
+    ## -f : fail silently (no output at all) on HTTP errors [HTTP error code => $LASTEXITCODE]
+    ## -L : follow redirects
     $curl_options += @( "-f", "-L" )
 
     $curl_options += @( "-o", "`"$to`"" )
