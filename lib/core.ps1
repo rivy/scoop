@@ -80,7 +80,11 @@ function is_local($path) {
 function normalize_path($path) {
     # $path does NOT need to exist
     $path = $path -replace "^~", $env:USERPROFILE   # expand '~' for PowerShell paths
-    if ($path) { $path = [System.IO.Path]::GetFullPath($path) }
+    if ($path) {
+        ## ToDO: handle broken path pieces better (eg, "C:\xxx\C:\yyy" causes a fault)
+        # trace "path = $path"
+        $path = [System.IO.Path]::GetFullPath($path)
+        }
     $path = $path.TrimEnd( [System.IO.Path]::DirectorySeparatorChar )
     $path
 }
