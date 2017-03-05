@@ -277,7 +277,7 @@ if NOT DEFINED __pipe ( goto :TEMPFILE_ERROR )
 goto :TEMPFILES_FOUND
 :TEMPFILES_ERROR
 echo %__ME%: ERROR: unable to open needed temporary file(s) [make sure to set TEMP or TMP to an available writable temporary directory {try "set TEMP=%%LOCALAPPDATA%%\Temp"}] 1>&2
-exit /b -1
+goto __nonexistent_label_to_shift_into_command_line_context__ 2>NUL || %COMSPEC% /c exit -1
 :TEMPFILES_FOUND
 '
 # shim code initializing environment pipe
@@ -304,7 +304,7 @@ echo (set __exit_code=%%ERRORLEVEL%%) >> "%__oosource%"
 echo ^( endlocal >> "%__oosource%"
 echo call ^"%__pipe%^"  >> "%__oosource%"
 echo call erase /q ^"%__pipe%^" ^>NUL 2^>NUL >> "%__oosource%"
-echo start ^"^" /b cmd /c del ^"%%~f0^" ^& exit /b %%__exit_code%% >> "%__oosource%"
+echo start ^"^" /b ^"%COMSPEC%^" /c del ^"%%~f0^" ^& goto __nonexistent_label_to_shift_into_command_line_context__ 2^>NUL ^|^| ^"%COMSPEC%^" /c exit %%__exit_code%% >> "%__oosource%"
 echo ^) >> "%__oosource%"
 '
 # shim code to hand-off execution to the proxy (makes this shim "update-enabled")
