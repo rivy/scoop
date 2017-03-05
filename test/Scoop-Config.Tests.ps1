@@ -1,12 +1,12 @@
 write-host -f darkyellow "[$(split-path -leaf $MyInvocation.MyCommand.Path)]"
 
-. "$psscriptroot\..\lib\core.ps1"
-. "$psscriptroot\..\lib\config.ps1"
+. "$($MyInvocation.MyCommand.Path | Split-Path | Split-Path)\lib\core.ps1"
+. $(rootrelpath "lib\config.ps1")
 
 describe "hashtable" {
     $json = '{ "one": 1, "two": [ { "a": "a" }, "b", 2 ], "three": { "four": 4 } }'
 
-    it "converts pscustomobject to hashtable" {
+    it "converts pscustomobject to hashtable" -skip:$(-not (get-command convertfrom-json)) {
         $obj = convertfrom-json $json
         $ht = hashtable $obj
 

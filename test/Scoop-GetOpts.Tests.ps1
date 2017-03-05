@@ -1,7 +1,7 @@
 write-host -f darkyellow "[$(split-path -leaf $MyInvocation.MyCommand.Path)]"
 
-. "$psscriptroot\lib\Scoop-TestLib.ps1"
-. "$psscriptroot\..\lib\getopt.ps1"
+. "$($MyInvocation.MyCommand.Path | Split-Path)\lib\Scoop-TestLib.ps1"
+. "$($MyInvocation.MyCommand.Path | Split-Path | Split-Path)\lib\getopt.ps1"
 
 describe "getopt" {
     it 'handle short option with required argument missing' {

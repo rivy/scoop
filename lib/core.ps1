@@ -1,6 +1,10 @@
 $scoopdir = $env:SCOOP, "$env:LOCALAPPDATA\scoop" | select-object -first 1
 $globaldir = $env:SCOOP_GLOBAL, "$($env:programdata.tolower())\scoop" | select-object -first 1
 
+# projectrootpath will remain $null when core.ps1 is included via the "locationless" initial install script
+$projectrootpath = $null
+if ($MyInvocation.MyCommand.Path) { $projectrootpath = $($MyInvocation.MyCommand.Path | Split-Path | Split-Path) }
+
 $CMDenvpipe = $env:SCOOP__CMDenvpipe
 
 # defaults
@@ -13,7 +17,7 @@ $default['repo.branch'] = 'master'
 $default['repo'] = "https://$($default['repo.domain'])/$($default['repo.owner'])/$($default['repo.name'])"
 
 # helper functions
-function coalesce($a, $b) { if($a) { return $a } $b }
+function coalesce($a, $b) { if($a) { $a } else { $b } }
 function format($str, $hash) {
     $hash.keys | foreach-object { set-variable $_ $hash[$_] }
     $executionContext.invokeCommand.expandString($str)
@@ -25,23 +29,28 @@ function is_admin {
 }
 
 # messages
-function abort($msg) { write-host $msg -f darkred; exit 1 }
-function warn($msg) { write-host $msg -f darkyellow; }
+function error($msg) { write-host $msg -f darkred }
+function warn($msg) { write-host $msg -f darkyellow }
+function info($msg) { write-host $msg -f darkcyan }
 function success($msg) { write-host $msg -f darkgreen }
 
+# abort
+function abort($msg, $exit_code=-1) { error $msg; exit $exit_code }
+
+
 # dirs
-function cachedir() { return "$scoopdir\cache" } # always local
-function basedir($global) { if($global) { return $globaldir } $scoopdir }
+function cachedir() { "$scoopdir\cache" } # always local
+function basedir($global) { if($global) { $globaldir } else { $scoopdir } }
 function appsdir($global) { "$(basedir $global)\apps" }
 function shimdir($global) { "$(basedir $global)\shims" }
 function appdir($app, $global) { "$(appsdir $global)\$app" }
 function versiondir($app, $version, $global) { "$(appdir $app $global)\$version" }
 
 # apps
-function sanitary_path($path) { return [regex]::replace($path, "[/\\?:*<>|]", "") }
+function sanitary_path($path) { [regex]::replace($path, "[/\\?:*<>|]", "") }
 function installed($app, $global=$null) {
-    if($null -eq $global) { return (installed $app $true) -or (installed $app $false) }
-    return test-path (appdir $app $global)
+    if($null -eq $global) { (installed $app $true) -or (installed $app $false); return }
+    test-path (appdir $app $global)
 }
 function installed_apps($global) {
     $dir = appsdir $global
@@ -58,13 +67,26 @@ function ensure($dir) { if(!(test-path $dir)) { mkdir $dir > $null }; resolve-pa
 function fullpath($path) { # should be ~ rooted
     $executionContext.sessionState.path.getUnresolvedProviderPathFromPSPath($path)
 }
-function relpath($path) { "$($myinvocation.psscriptroot)\$path" } # relative to calling script
+function rootrelpath($path) { join-path $projectrootpath $path } # relative to project main directory
 function friendly_path($path) {
     $h = $home; if(!$h.endswith('\')) { $h += '\' }
-    return "$path" -replace ([regex]::escape($h)), "~\"
+    "$path" -replace ([regex]::escape($h)), "~\"
 }
 function is_local($path) {
     ($path -notmatch '^https?://') -and (test-path $path)
+}
+function normalize_path($path) {
+    # $path does NOT need to exist
+    $path = $path -replace "^~", $env:USERPROFILE   # expand '~' for PowerShell paths
+    if ($path) { $path = [System.IO.Path]::GetFullPath($path) }
+    $path = $path.TrimEnd( [System.IO.Path]::DirectorySeparatorChar )
+    $path
+}
+function split_pathlist($pathlist) {
+    # PATHLIST == semicolon separated paths (possibly double-quoted with internal semicolons)
+    # RETURN = array of normalized paths
+    $regex = ';(?=(?:[^\"]*\"[^\"]*\")*(?![^\"]*\"))'   # ';' followed by zero or more balanced double-quotes
+    @( $pathlist -split $regex | foreach-object { normalize_path $_ } )
 }
 
 # operations
@@ -110,7 +132,7 @@ function unzip($path,$to) {
         [io.compression.zipfile]::extracttodirectory($path,$to)
     } catch [system.io.pathtoolongexception] {
         # try to fall back to 7zip if path is too long
-        if(7zip_installed) {
+        if(sevenzip_installed) {
             extract_7zip $path $to $false
             return
         } else {
@@ -150,10 +172,7 @@ function shim($path, $global, $name, $arg) {
     $shimdir_relative_path = resolve-path -relative $path
     pop-location
 
-    write-output '# ensure $HOME is set for MSYS programs' | out-file $shim -encoding DEFAULT
-    write-output "if(!`$env:home) { `$env:home = `"`$home\`" }" | out-file $shim -encoding DEFAULT -append
-    write-output 'if($env:home -eq "\") { $env:home = $env:allusersprofile }' | out-file $shim -encoding DEFAULT -append
-    write-output "`$path = join-path `"`$psscriptroot`" `"$shimdir_relative_path`"" | out-file $shim -encoding DEFAULT -append
+    write-output "`$path = join-path `"`$(`$MyInvocation.MyCommand.Path | Split-Path)`" `"$shimdir_relative_path`"" | out-file $shim -encoding DEFAULT
     if($arg) {
         write-output "`$args = '$($arg -join "', '")', `$args" | out-file $shim -encoding DEFAULT -append
     }
@@ -171,10 +190,7 @@ function shim($path, $global, $name, $arg) {
         # shim .bat, .cmd so they can be used by programs with no awareness of PSH
         # NOTE: this code transfers execution flow via hand-off, not a call, so any modifications if/while in-progress are safe
         $shim_cmd = "$(strip_ext($shim)).cmd"
-        ':: ensure $HOME is set for MSYS programs'           | out-file $shim_cmd -encoding DEFAULT
-        '@if "%home%"=="" set home=%homedrive%%homepath%\'   | out-file $shim_cmd -encoding DEFAULT -append
-        '@if "%home%"=="\" set home=%allusersprofile%\'      | out-file $shim_cmd -encoding DEFAULT -append
-        "@`"%~dp0.\$shimdir_relative_path`" $arg %*"         | out-file $shim_cmd -encoding DEFAULT -append
+        "@`"%~dp0.\$shimdir_relative_path`" $arg %*"         | out-file $shim_cmd -encoding DEFAULT
     } elseif($path -match '\.ps1$') {
         # make ps1 accessible from cmd.exe
         $shim_cmd = "$(strip_ext($shim)).cmd"
@@ -194,7 +210,7 @@ function shim_scoop_cmd_code($shim_cmd_path, $path, $arg) {
     # * additional code needed to pipe environment variables back up and into to the original calling CMD process (see shim_scoop_cmd_code_body())
 
     # swallow errors for the case of non-existent CMD shim (eg, during initial installation)
-    $CMD_shim_fullpath = resolve-path $shim_cmd_path -ea ignore
+    $CMD_shim_fullpath = resolve-path $shim_cmd_path -ea SilentlyContinue
     $CMD_shim_content = $null
     if ($CMD_shim_fullpath) {
         $CMD_shim_content = Get-Content $CMD_shim_fullpath
@@ -332,19 +348,59 @@ $code
 }
 
 function ensure_in_path($dir, $global) {
-    $path = env 'path' -t $global
     $dir = fullpath $dir
-    if($path -notmatch [regex]::escape($dir)) {
-        write-output "adding $(friendly_path $dir) to $(if($global){'global'}else{'your'}) path"
 
-        env 'path' -t $global "$dir;$path" # for future sessions...
-        env 'path' "$dir;$env:path"        # for this session
+    # write-host -fore cyan "dir = '$dir'"
+
+    # ToDO: test with path non-existant (may need several `-erroraction silentlycontinue`)
+    $shim_dir = normalize_path $(shimdir $global)
+    $shim_dir_parent = normalize_path $($shim_dir + '/..')
+
+    # write-host -fore cyan "shim_dir = '$shim_dir'"
+    # write-host -fore cyan "shim_dir = '$shim_dir_parent'"
+
+    # future sessions
+    $p = env 'path' -t $global
+    $was_present, $currpath = strip_path $p $dir
+    if ( -not $was_present ) { write-output "adding '$dir' to $(if($global){'global'}else{'your'}) path" }
+    # write-host -fore cyan "currpath = '$currpath'"
+    $paths = split_pathlist $currpath
+    # write-host -fore cyan "[paths]`n$paths"
+    # write-host -fore cyan "paths.count = $($paths.count)"
+    if ($paths.count -lt 1) { $paths = @( $dir ) }
+    else {
+        $index = [System.Array]::IndexOf( $paths, @( @( $paths ) -imatch $('^'+[regex]::escape($shim_dir_parent)) )[0] )
+        if ( $index -lt 0 ) { $index = $paths.count }
+        if ( $paths[$index] -ine $shim_dir ) { $index -= 1 }    # place after $shim_dir but before any other scoop dir
+        $new_paths = $paths[0..$index] + $dir + $( if ($index -lt $paths.count) { $paths[$($index+1)..$paths.count] } )
+        $paths = $new_paths
     }
+    # write-host -fore cyan "[paths]`n$paths"
+    # write-host -fore cyan "paths.count = $($paths.count)"
+    env 'path' -t $global $( $paths -join ';' )
+
+    # this session / current process
+    $null, $env:path = strip_path $env:path $dir
+    $paths = split_pathlist $env:path
+    # write-host -fore cyan "[paths]`n$paths"
+    # write-host -fore cyan "paths.count = $($paths.count)"
+    if ($paths.count -lt 1) { $paths = @( $dir ) }
+    else {
+        $index = [System.Array]::IndexOf( $paths, @( @( $paths ) -imatch $('^'+[regex]::escape($shim_dir_parent)) )[0] )
+        if ( $index -lt 0 ) { $index = $paths.count }
+        if ( $paths[$index] -ine $shim_dir ) { $index -= 1 }    # place after $shim_dir but before any other scoop dir
+        $new_paths = $paths[0..$index] + $dir + $( if ($index -lt $paths.count) { $paths[$($index+1)..$paths.count] } )
+        $paths = $new_paths
+    }
+    # write-host -fore cyan "[paths]`n$paths"
+    # write-host -fore cyan "paths.count = $($paths.count)"
+    env 'path' $( $paths -join ';' )
 }
 
 function strip_path($orig_path, $dir) {
-    $stripped = [string]::join(';', @( $orig_path.split(';') | where-object { $_ -and $_ -ne $dir } ))
-    return ($stripped -ne $orig_path), $stripped
+    $dir = normalize_path $dir
+    $stripped = [string]::join(';', @( split_pathlist $orig_path | where-object { $_ -and $_ -ine $dir } ))
+    ($stripped -ine $orig_path), $stripped
 }
 
 function remove_from_path($dir,$global) {
@@ -369,7 +425,7 @@ function ensure_scoop_in_path($global) {
 }
 
 function ensure_robocopy_in_path {
-    if(!(get-command robocopy -ea ignore)) {
+    if(!(get-command robocopy -ea SilentlyContinue)) {
         shim "C:\Windows\System32\Robocopy.exe" $false
     }
 }
@@ -413,7 +469,7 @@ $default_aliases = @{
 }
 
 function reset_alias($name, $value) {
-    if($existing = get-alias $name -ea ignore | where-object { $_.options -match 'readonly' }) {
+    if($existing = get-alias $name -ea SilentlyContinue | where-object { $_.options -match 'readonly' }) {
         if($existing.definition -ne $value) {
             write-host "alias $name is read-only; can't reset it" -f darkyellow
         }
@@ -463,8 +519,112 @@ function CMD_SET_encode_arg {
 
 function app($app) {
     $app = [string]$app
-    if ($app -match '([a-zA-Z0-9-]+)/([a-zA-Z0-9-]+)') {
+    if ($app -match '^([^/\\]+)(?:/|\\)([^/\\]+)$') {
         return $matches[2], $matches[1]
     }
     $app, $null
+}
+
+function ConvertFrom-JsonNET {
+    # scratch implementation, based on ideas/concepts from Brian Rogers and bradgonesurfing [1]
+    # [1]: http://stackoverflow.com/questions/5546142/how-do-i-use-json-net-to-deserialize-into-nested-recursive-dictionary-and-list/19140420#19140420
+    [CmdletBinding()]
+    param(
+        [parameter(mandatory=$True, ValueFromPipeline=$True)] [string]$json_string
+        )
+    BEGIN {
+        $json_module_name = 'Newtonsoft.Json'
+        if ( $null -eq $([System.AppDomain]::CurrentDomain.GetAssemblies() | where-object { $_.GetName().Name -eq $json_module_name }) ) {
+            # avoid `import-module` which maintains an open handle on any loaded assembly .dll file until the parent assembly is shut down
+            # instead, use NET `[Reflection.Assembly]::Load(...)` to load the assembly from an in-memory copy
+            [System.Reflection.Assembly]::Load( [System.IO.File]::ReadAllBytes($(resolve-path $(rootrelpath "vendor\Newtonsoft.Json\lib\net20\$json_module_name.dll"))) ) | out-null
+            # write-host -fore darkcyan "$json_module_name loaded"
+        }
+        $f_ToObject = { param( $token )
+            $type = $token.psobject.TypeNames -imatch "Newtonsoft\..*(JObject|JArray|JProperty|JValue)"
+            if (-not $type) { $type = "DEFAULT" }
+            #write-debug "ToObject::$($token.psobject.TypeNames)::$type::'$($token.name)'"
+            switch ( $type )
+            {
+                "Newtonsoft.Json.Linq.JObject"
+                    {
+                    #write-debug "object::$($token.psobject.TypeNames)::'$($token.name)'=$($token.value)"
+                    $children = $token.children()
+                    $h = @{}
+                    $children | ForEach-Object {
+                        #write-debug "object/child::$($_.psobject.TypeNames)::'$($_.name)'[$($_.count)]"
+                        if ($_.psobject.TypeNames -imatch "Newtonsoft\..*(JValue)") {
+                            $h[$token.name] = $_.value
+                            }
+                        else { $h[$_.name] = $(& $f_ToObject $_.first) }
+                        }
+                    ,$h
+                    break
+                    }
+                "Newtonsoft.Json.Linq.JArray"
+                    {
+                    #write-debug "array::$($token.psobject.TypeNames)::'$($token.name)'=$($token.value)"
+                    $a = @()
+                    $token | ForEach-Object {
+                        #write-debug "array/token::$($_.psobject.TypeNames)::'$($_.name)'=$($_.value)"
+                        if ($_.psobject.TypeNames -imatch "Newtonsoft\..*(JValue)") {
+                            $a += , $_.value
+                            }
+                        else { $a += , $(& $f_ToObject $_) }
+                        }
+                    ,$a
+                    break
+                    }
+                default
+                    {
+                    #write-debug "default::$($token.psobject.TypeNames)::'$($token.name)'=$($token.value)"
+                    $token.value
+                    break
+                    }
+            }
+        }
+    }
+    PROCESS {
+        $p = [Newtonsoft.Json.Linq.JToken]::Parse( $json_string )
+        # NOTE: PowerShell v3+ `ConvertFrom-Json` returns a "PSCustomObject"; avoided here because "PSCustomObject" re-serializes incorrectly
+        $o = ,$(& $f_ToObject $p)
+        [object]$o  ## returns "System.Array", "System.Collections.Hashtable", or basic type
+    }
+    END {}
+}
+
+function ConvertTo-JsonNET {
+    [CmdletBinding()]
+    param(
+        [parameter(mandatory=$True, ValueFromPipeline=$True)][object] $object,
+        [parameter(mandatory=$False)][int] $indentation = 4  ## <0 .. no indentation; >=0 set indentation and indented format; default = 4; NOTE: [int]$null => 0
+        )
+    BEGIN {
+        $json_module_name = 'Newtonsoft.Json'
+        if ( $null -eq $([System.AppDomain]::CurrentDomain.GetAssemblies() | where-object { $_.GetName().Name -eq $json_module_name }) ) {
+            # avoid `import-module` which maintains an open handle on any loaded assembly .dll file until the parent assembly is shut down
+            # instead, use NET `[Reflection.Assembly]::Load(...)` to load the assembly from an in-memory copy
+            [System.Reflection.Assembly]::Load( [System.IO.File]::ReadAllBytes($(resolve-path $(rootrelpath "vendor\Newtonsoft.Json\lib\net20\$json_module_name.dll"))) ) | out-null
+            # write-host -fore darkcyan "$json_module_name loaded"
+        }
+        $list = New-Object System.Collections.Generic.List[object]
+    }
+    PROCESS {
+        $list.add($object)
+    }
+    END {
+        if ($list.count -eq 1) { $list = $list | select-object -first 1 }
+        # [Newtonsoft.Json.JsonConvert]::SerializeObject( $list )   ## simpler implementation, but lacks formatting options
+        # NOTE: indentation == 4 => output equivalent to ConvertTo-Json()
+        $sb = New-Object System.Text.StringBuilder
+        $sw = New-Object System.IO.StringWriter($sb)
+        $writer = New-Object Newtonsoft.Json.JsonTextWriter($sw)
+        if ($indentation -ge 0) {
+            $writer.Formatting = [Newtonsoft.Json.Formatting]::Indented     ## indented + multiline
+            $writer.Indentation = $indentation
+        }
+        $s = New-Object Newtonsoft.Json.JsonSerializer
+        $s.Serialize( $writer, $list )
+        $sw.ToString()
+    }
 }

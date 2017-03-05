@@ -2,7 +2,7 @@ write-host -f darkyellow "[$(split-path -leaf $MyInvocation.MyCommand.Path)]"
 
 $repo_dir = (Get-Item $MyInvocation.MyCommand.Path).directory.parent.FullName
 
-$repo_files = @( Get-ChildItem $repo_dir -file -recurse -force )
+$repo_files = @( $(Get-ChildItem $repo_dir -recurse -force | where-object { -not $_.PSIsContainer }) )
 
 $project_file_exclusions = @(
     $([regex]::Escape($repo_dir.fullname)+'\\.git\\.*$')
@@ -163,7 +163,7 @@ describe 'Style constraints for non-binary project files' {
         $badFiles = @(
             foreach ($file in $files)
             {
-                $string = [System.IO.File]::ReadAllText($file.FullName)
+                $string = [System.IO.File]::ReadAllText($(resolve-path $file.FullName))
                 if ($string.Length -gt 0 -and $string[-1] -ne "`n")
                 {
                     $file.FullName
@@ -181,7 +181,7 @@ describe 'Style constraints for non-binary project files' {
         $badFiles = @(
             foreach ($file in $files)
             {
-                $content = Get-Content -raw $file.FullName
+                $content = [System.IO.File]::ReadAllText($(resolve-path $file.FullName))
                 $lines = [regex]::split($content, '\r\n')
                 $lineCount = $lines.Count
 

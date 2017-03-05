@@ -1,15 +1,17 @@
 $cfgpath = "~/.scoop"
 
+## hashtable() + hashtable_val() are not needed when using convert*-jsonNET
+## deprecated, PENDING removal
 function hashtable($obj) {
     $h = @{ }
     $obj.psobject.properties | foreach-object {
         $h[$_.name] = hashtable_val $_.value
     }
-    return $h
+    $h
 }
 
 function hashtable_val($obj) {
-    if($null -eq $obj) { return $null }
+    if($null -eq $obj) { $null; return }
     if($obj -is [array]) {
         $arr = @()
         $obj | foreach-object {
@@ -20,26 +22,29 @@ function hashtable_val($obj) {
                 $arr += $val
             }
         }
-        return ,$arr
+        ,$arr
+        return
     }
     if($obj.gettype().name -eq 'pscustomobject') { # -is is unreliable
-        return hashtable $obj
+        hashtable $obj
+        return
     }
-    return $obj # assume primitive
+    $obj # assume primitive
 }
+##
 
 function load_cfg {
-    if(!(test-path $cfgpath)) { return $null }
+    if(!(test-path $cfgpath)) { $null; return }
 
     try {
-        hashtable (get-content $cfgpath -raw | convertfrom-json -ea stop)
+        [System.IO.File]::ReadAllText($(resolve-path $cfgpath)) | convertfrom-jsonNET -ea stop
     } catch {
         write-host "ERROR loading $cfgpath`: $($_.exception.message)"
     }
 }
 
 function get_config($name) {
-    return $cfg.$name
+    $cfg.$name
 }
 
 function set_config($name, $val) {
@@ -53,7 +58,7 @@ function set_config($name, $val) {
         $cfg.remove($name)
     }
 
-    convertto-json $cfg | out-file $cfgpath -encoding utf8
+    [System.IO.File]::WriteAllText( $(normalize_path $cfgpath), $(convertto-jsonNET $cfg) )
 }
 
 $cfg = load_cfg
