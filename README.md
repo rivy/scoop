@@ -1,4 +1,4 @@
-`scoop` [![Build status](https://ci.appveyor.com/api/projects/status/jgckhkhe5rdd6586/branch/tr-v2?svg=true)](https://ci.appveyor.com/project/rivy/scoop/branch/tr-v2)
+`scoop` [![Build status](https://ci.appveyor.com/api/projects/status/jgckhkhe5rdd6586/branch/master?svg=true)](https://ci.appveyor.com/project/rivy/scoop/branch/master)
 =======
 
 `scoop` is a command-line installer for Windows.
@@ -24,12 +24,12 @@ To install, paste either of the following set of command strings at the respecti
 
 ##### CMD Shell &middot; `C:\>`
 
-    powershell -command "iex (new-object net.webclient).downloadstring( 'https://raw.github.com/rivy/scoop/tr-v2/bin/install.ps1' )"
+    powershell -command "iex (new-object net.webclient).downloadstring( 'https://raw.github.com/rivy/scoop/master/bin/install.ps1' )"
     set PATH=%PATH%;%LOCALAPPDATA%\scoop\shims
 
 ##### PowerShell &middot; `PS C:\>`
 
-    iex (new-object net.webclient).downloadstring( 'https://raw.github.com/rivy/scoop/tr-v2/bin/install.ps1' )
+    iex (new-object net.webclient).downloadstring( 'https://raw.github.com/rivy/scoop/master/bin/install.ps1' )
 
 Once installed, run `scoop help` for instructions.
 
