@@ -9,14 +9,14 @@
 #     scoop cache rm <app> to remove downloads for a specific app.
 param($cmd, $app)
 
-. "$psscriptroot\..\lib\help.ps1"
+. "$($MyInvocation.MyCommand.Path | Split-Path | Split-Path)\lib\help.ps1"
 
 reset_aliases
 
 function cacheinfo($file) {
     $app, $version, $url = $file.name -split '#'
     $size = filesize $file.length
-    return new-object psobject -prop @{ app=$app; version=$version; url=$url; size=$size }
+    @{ app=$app; version=$version; url=$url; size=$size }
 }
 
 function filesize($length) {

@@ -1,12 +1,12 @@
 # Usage: scoop status
 # Summary: Show status and check for new app versions
 
-. "$psscriptroot\..\lib\core.ps1"
-. "$psscriptroot\..\lib\manifest.ps1"
-. "$psscriptroot\..\lib\buckets.ps1"
-. "$psscriptroot\..\lib\versions.ps1"
-. "$psscriptroot\..\lib\depends.ps1"
-. "$psscriptroot\..\lib\config.ps1"
+. "$($MyInvocation.MyCommand.Path | Split-Path | Split-Path)\lib\core.ps1"
+. $(rootrelpath "lib\manifest.ps1")
+. $(rootrelpath "lib\buckets.ps1")
+. $(rootrelpath "lib\versions.ps1")
+. $(rootrelpath "lib\depends.ps1")
+. $(rootrelpath "lib\config.ps1")
 
 reset_aliases
 
@@ -14,10 +14,11 @@ reset_aliases
 $currentdir = fullpath $(versiondir 'scoop' 'current')
 $needs_update = $false
 
-if(test-path "$currentdir\.git") {
+if ((test-path "$currentdir\.git") -and $(try { get-command 'git' -ea stop } catch { $false })) {
     push-location $currentdir
-    git fetch -q origin
-    $commits = $(git log "HEAD..origin/$(scoop config SCOOP_BRANCH)" --oneline)
+    $current_branch = & "git" @('rev-parse', '--abbrev-ref', 'HEAD', '--') 2>$null
+    $null = & "git" @('fetch', '-q',  'origin') 2>$null
+    $commits = & "git" @('log', "HEAD..origin/$current_branch", '--oneline') 2>$null
     if($commits) { $needs_update = $true }
     pop-location
 }

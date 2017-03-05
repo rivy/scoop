@@ -7,7 +7,8 @@ function nightly_version($date, $quiet = $false) {
 }
 
 function install_app($app, $architecture, $global) {
-    $app, $manifest, $bucket, $url = locate $app
+    $app, $bucket = app $app
+    $app, $manifest, $bucket, $url = locate $app $bucket
     $use_cache = $true
     $check_hash = $true
 
@@ -27,6 +28,15 @@ function install_app($app, $architecture, $global) {
         $check_hash = $false
     }
 
+    # $env:HOME is required by many unix-y tools (eg, MSYS tools)
+    # * trust user settings, if present
+    if (-not $(env -t 'user' HOME)) {
+        # future use
+        env -t 'user' HOME $env:USERPROFILE
+        write-host -fore cyan "scoop/install: HOME environment variable set to '$env:USERPROFILE' (at 'user' level)"
+    }
+    if (-not $(env HOME)) { env HOME $(env -t 'user' HOME) }     # current process
+
     write-output "installing $app ($version)"
 
     $dir = ensure (versiondir $app $version $global)
@@ -37,6 +47,7 @@ function install_app($app, $architecture, $global) {
     run_installer $fname $manifest $architecture $dir
     ensure_install_dir_not_in_path $dir $global
     create_shims $manifest $dir $global
+    create_startmenu_shortcuts $manifest $dir $global
     if($global) { ensure_scoop_in_path $global } # can assume local scoop is in path
     env_add_path $manifest $dir $global
     env_set $manifest $dir $global
@@ -53,8 +64,8 @@ function install_app($app, $architecture, $global) {
 
 function ensure_architecture($architecture_opt) {
     switch($architecture_opt) {
-        '' { return default_architecture }
-        { @('32bit','64bit') -contains $_ } { return $_ }
+        '' { default_architecture; return }
+        { @('32bit','64bit') -contains $_ } { $_; return }
         default { abort "invalid architecture: '$architecture'"}
     }
 }
@@ -67,8 +78,8 @@ function appname_from_url($url) {
     (split-path $url -leaf) -replace '.json$', ''
 }
 
-function locate($app) {
-    $manifest, $bucket, $url = $null, $null, $null
+function locate($app, $bucket) {
+    $manifest, $url = $null, $null
 
     # check if app is a url
     if($app -match '^((ht)|f)tps?://') {
@@ -77,7 +88,7 @@ function locate($app) {
         $manifest = url_manifest $url
     } else {
         # check buckets
-        $manifest, $bucket = find_manifest $app
+        $manifest, $bucket = find_manifest $app $bucket
 
         if(!$manifest) {
             # couldn't find app in buckets: check if it's a local path
@@ -91,7 +102,7 @@ function locate($app) {
         }
     }
 
-    return $app, $manifest, $bucket, $url
+    $app, $manifest, $bucket, $url
 }
 
 function dl_with_cache($app, $version, $url, $to, $cookies, $use_cache = $true) {
@@ -121,8 +132,8 @@ function dl_progress($url, $to, $cookies) {
 
     $left = [console]::cursorleft
     $top = [console]::cursortop
-    register-objectevent $wc downloadprogresschanged progress | out-null
-    register-objectevent $wc downloadfilecompleted complete | out-null
+    register-objectevent $wc -eventname downloadprogresschanged -sourceidentifier progress | out-null
+    register-objectevent $wc -eventname downloadfilecompleted -sourceidentifier complete | out-null
     try {
         $wc.downloadfileasync($url, $to)
 
@@ -178,7 +189,7 @@ function dl_urls($app, $version, $manifest, $architecture, $dir, $use_cache = $t
     $extract_tos = @(extract_to $manifest $architecture)
     $extracted = 0;
 
-    foreach($url in $urls) {
+    if ($null -ne $urls) { foreach ($url in $urls) {
         # NOTE: uri/url fragment identifiers are used to optionally specify file type for extraction
         $uri = [System.URI]$url
         $fname = split-path $($uri.LocalPath + $uri.Fragment) -leaf
@@ -206,12 +217,18 @@ function dl_urls($app, $version, $manifest, $architecture, $dir, $use_cache = $t
             # check manifest doesn't use deprecated install method
             $msi = msi $manifest $architecture
             if(!$msi) {
-                $extract_fn = 'extract_msi'
+                $useLessMsi = get_config MSIEXTRACT_USE_LESSMSI
+                if ($useLessMsi -eq $true) {
+                    $extract_fn, $extract_dir = lessmsi_config $extract_dir
+                }
+                else {
+                    $extract_fn = 'extract_msi'
+                }
             } else {
                 warn "MSI install is deprecated. If you maintain this manifest, please refer to the manifest reference docs"
             }
         } elseif(file_requires_7zip $fname) { # 7zip
-            if(!(7zip_installed)) {
+            if(!(sevenzip_installed)) {
                 warn "aborting: you'll need to run 'scoop uninstall $app' to clean up"
                 abort "7-zip is required. you can install it with 'scoop install 7zip'"
             }
@@ -242,9 +259,21 @@ function dl_urls($app, $version, $manifest, $architecture, $dir, $use_cache = $t
 
             $extracted++
         }
-    }
+    }}
 
     $fname # returns the last downloaded file
+}
+
+function lessmsi_config ($extract_dir) {
+    $extract_fn = 'extract_lessmsi'
+    if ($extract_dir) {
+        $extract_dir = join-path SourceDir $extract_dir
+    }
+    else {
+        $extract_dir = "SourceDir"
+    }
+
+    $extract_fn, $extract_dir
 }
 
 function cookie_header($cookies) {
@@ -265,9 +294,9 @@ function is_in_dir($dir, $check) {
 
 # hashes
 function hash_for_url($manifest, $url, $arch) {
-    $hashes = @(hash $manifest $arch) | where-object { $_ -ne $null };
+    $hashes = @(hash $manifest $arch) | where-object { $null -ne $_ };
 
-    if($hashes.length -eq 0) { return $null }
+    if($hashes.length -eq 0) { $null; return }
 
     $urls = @(url $manifest $arch)
 
@@ -282,7 +311,8 @@ function check_hash($file, $url, $manifest, $arch) {
     $hash = hash_for_url $manifest $url $arch
     if(!$hash) {
         warn "warning: no hash in manifest. sha256 is:`n$(compute_hash (fullpath $file) 'sha256')"
-        return $true
+        $true
+        return
     }
 
     write-host "checking hash..." -nonewline
@@ -293,16 +323,19 @@ function check_hash($file, $url, $manifest, $arch) {
     }
 
     if(@('md5','sha1','sha256') -notcontains $type) {
-        return $false, "hash type $type isn't supported"
+        $false, "hash type $type isn't supported"
+        return
     }
 
     $actual = compute_hash (fullpath $file) $type
 
     if($actual -ne $expected) {
-        return $false, "hash check failed for $url. expected: $($expected), actual: $($actual)!"
+        $false, "hash check failed for $url. expected: $($expected), actual: $($actual)!"
+        return
     }
     write-host "ok"
-    return $true
+    $true
+    return
 }
 
 function compute_hash($file, $algname) {
@@ -313,18 +346,18 @@ function compute_hash($file, $algname) {
         [string]::join('', $hexbytes)
     } finally {
         $fs.dispose()
-        $alg.dispose()
+        #$alg.dispose()
     }
 }
 
 function cmd_available($cmd) {
-    try { get-command $cmd -ea stop } catch { return $false }
+    try { get-command $cmd -ea stop } catch { $false; return }
     $true
 }
 
 # for dealing with installers
 function args($config, $dir) {
-    if($config) { return $config | foreach-object { (format $_ @{'dir'=$dir}) } }
+    if($config) { $config | foreach-object { (format $_ @{'dir'=$dir}) }; return }
     @()
 }
 
@@ -335,16 +368,20 @@ function run($exe, $arg, $msg, $continue_exit_codes) {
         if($proc.exitcode -ne 0) {
             if($continue_exit_codes -and ($continue_exit_codes.containskey($proc.exitcode))) {
                 warn $continue_exit_codes[$proc.exitcode]
-                return $true
+                $true
+                return
             }
-            write-host "exit code was $($proc.exitcode)"; return $false
+            write-host "exit code was $($proc.exitcode)"
+            $false
+            return
         }
     } catch {
         write-host -f darkred $_.exception.tostring()
-        return $false
+        $false
+        return
     }
     if($msg) { write-host "done" }
-    return $true
+    $true
 }
 
 function unpack_inno($fname, $manifest, $dir) {
@@ -393,7 +430,7 @@ function install_msi($fname, $dir, $msi) {
     if($msi.silent) { $arg += '/qn', 'ALLUSERS=2', 'MSIINSTALLPERUSER=1' }
     else { $arg += '/qb-!' }
 
-    $continue_exit_codes = @{ 3010 = "a restart is required to complete installation" }
+    $continue_exit_codes = @{ '3010' = "a restart is required to complete installation" }
 
     $installed = run 'msiexec' $arg "running installer..." $continue_exit_codes
     if(!$installed) {
@@ -410,13 +447,17 @@ function extract_msi($path, $to) {
     if(test-path $logfile) { remove-item $logfile }
 }
 
+function extract_lessmsi($path, $to) {
+    & 'lessmsi' @( 'x', $path, $to )
+}
+
 # deprecated
 # get-wmiobject win32_product is slow and checks integrity of each installed program,
 # so this uses the [wmi] type accelerator instead
 # http://blogs.technet.com/b/heyscriptingguy/archive/2011/12/14/use-powershell-to-find-and-uninstall-software.aspx
 function msi_installed($code) {
     $path = "hklm:\software\microsoft\windows\currentversion\uninstall\$code"
-    if(!(test-path $path)) { return $false }
+    if(!(test-path $path)) { $false; return }
     $key = get-item $path
     $name = $key.getvalue('displayname')
     $version = $key.getvalue('displayversion')
@@ -459,8 +500,8 @@ function run_uninstaller($manifest, $architecture, $dir) {
                 $arg += '/qb-!'
             }
 
-            $continue_exit_codes.1605 = 'not installed, skipping'
-            $continue_exit_codes.3010 = 'restart required'
+            $continue_exit_codes.'1605' = 'not installed, skipping'
+            $continue_exit_codes.'3010' = 'restart required'
         } elseif($uninstaller) {
             $exe = "$dir\$($uninstaller.file)"
             $arg = args $uninstaller.args
@@ -482,12 +523,12 @@ function run_uninstaller($manifest, $architecture, $dir) {
 
 # get target, name, arguments for shim
 function shim_def($item) {
-    if($item -is [array]) { return $item }
-    return $item, (strip_ext (fname $item)), $null
+    if($item -is [array]) { $item; return }
+    $item, (strip_ext (fname $item)), $null
 }
 
 function create_shims($manifest, $dir, $global) {
-    $manifest.bin | where-object { $_ -ne $null } | foreach-object {
+    $manifest.bin | where-object { $null -ne $_ } | foreach-object {
         $target, $name, $arg = shim_def $_
         write-output "creating shim for $name"
 
@@ -519,11 +560,46 @@ function rm_shim($name, $shimdir) {
 }
 
 function rm_shims($manifest, $global) {
-    $manifest.bin | where-object { $_ -ne $null } | foreach-object {
+    $manifest.bin | where-object { $null -ne $_ } | foreach-object {
         $target, $name, $null = shim_def $_
         $shimdir = shimdir $global
 
         rm_shim $name $shimdir
+    }
+}
+
+# Creates shortcut for the app in the start menu
+function create_startmenu_shortcuts($manifest, $dir, $global) {
+    $manifest.shortcuts | where-object { $_ -ne $null } | foreach-object {
+        $target = $_.item(0)
+        $name = $_.item(1)
+        startmenu_shortcut "$dir\$target" $name
+    }
+}
+
+function startmenu_shortcut($target, $shortcutName) {
+    if(!(Test-Path $target)) {
+        abort "Can't create the Startmenu shortcut for $(fname $target): couldn't find $target"
+    }
+    $scoop_startmenu_folder = "$env:USERPROFILE\Start Menu\Programs\Scoop Apps"
+    if(!(Test-Path $scoop_startmenu_folder)) {
+        New-Item $scoop_startmenu_folder -type Directory
+    }
+    $wsShell = New-Object -ComObject WScript.Shell
+    $wsShell = $wsShell.CreateShortcut("$scoop_startmenu_folder\$shortcutName.lnk")
+    $wsShell.TargetPath = "$target"
+    $wsShell.Save()
+}
+
+# Removes the Startmenu shortcut if it exists
+function rm_startmenu_shortcuts($manifest, $global) {
+    $manifest.shortcuts | where-object { $_ -ne $null } | foreach-object {
+        $name = $_.item(1)
+        $shortcut = "$env:USERPROFILE\Start Menu\Programs\$name.lnk"
+        if(Test-Path -Path $shortcut) {
+             Remove-Item $shortcut
+             write-output "Removed shortcut $shortcut"
+        }
     }
 }
 
@@ -555,34 +631,24 @@ function find_dir_or_subdir($path, $dir) {
             else { $fixed += $_ }
         }
     }
-    return [string]::join(';', $fixed), $removed
+    [string]::join(';', $fixed), $removed
 }
 
 function env_add_path($manifest, $dir, $global) {
-    $manifest.env_add_path | where-object { $_ } | foreach-object {
+    $paths = @( $manifest.env_add_path )
+    [array]::Reverse( $paths ) # in-place reverse
+    $paths | where-object { $null -ne $_ } | foreach-object {
         $path_dir = "$dir\$($_)"
         if(!(is_in_dir $dir $path_dir)) {
             abort "error in manifest: env_add_path '$_' is outside the app directory"
         }
-        add_first_in_path $path_dir $global
+        ensure_in_path $path_dir $global
     }
-}
-
-function add_first_in_path($dir, $global) {
-    $dir = fullpath $dir
-
-    # future sessions
-    $null, $currpath = strip_path (env 'path' -t $global) $dir
-    env 'path' -t $global "$dir;$currpath"
-
-    # this session
-    $null, $env:path = strip_path $env:path $dir
-    env 'path' "$dir;$env:path"
 }
 
 function env_rm_path($manifest, $dir, $global) {
     # remove from path
-    $manifest.env_add_path | where-object { $_ } | foreach-object {
+    $manifest.env_add_path | where-object { $null -ne $_ } | foreach-object {
         $path_dir = "$dir\$($_)"
         remove_from_path $path_dir $global
     }
@@ -590,33 +656,31 @@ function env_rm_path($manifest, $dir, $global) {
 
 function env_set($manifest, $dir, $global) {
     if($manifest.env_set) {
-        $manifest.env_set | get-member -member noteproperty | foreach-object {
-            $name = $_.name;
-            $val = format $manifest.env_set.$($_.name) @{ "dir" = $dir }
+        $manifest.env_set | where-object { $null -ne $_ } | foreach-object { foreach ($name in $_.keys) {
+            $val = format $manifest.env_set.$($name) @{ "dir" = $dir }
             env $name -t $global $val
             env $name $val
-        }
+        }}
     }
 }
 function env_rm($manifest, $global) {
     if($manifest.env_set) {
-        $manifest.env_set | get-member -member noteproperty | foreach-object {
-            $name = $_.name
+        $manifest.env_set | where-object { $null -ne $_ } | foreach-object { foreach ($name in $_.keys) {
             env $name -t $global $null
             env $name $null
-        }
+        }}
     }
 }
 
 function pre_install($manifest) {
-    $manifest.pre_install | where-object { $_ } | foreach-object {
+    $manifest.pre_install | where-object { $null -ne $_ } | foreach-object {
         write-output "running pre-install script..."
         & $( [ScriptBlock]::Create($_) ) ## aka: invoke-expression $_
     }
 }
 
 function post_install($manifest) {
-    $manifest.post_install | where-object { $_ } | foreach-object {
+    $manifest.post_install | where-object { $null -ne $_ } | foreach-object {
         write-output "running post-install script..."
         & $( [ScriptBlock]::Create($_) ) ## aka: invoke-expression $_
     }
@@ -631,7 +695,10 @@ function show_notes($manifest) {
 }
 
 function all_installed($apps, $global) {
-    $apps | where-object { installed $_ $global }
+    $apps | where-object {
+        $app, $null = app $_
+        installed $app $global
+    }
 }
 
 function prune_installed($apps) {
@@ -642,26 +709,29 @@ function prune_installed($apps) {
 # check whether the app failed to install
 function failed($app, $global) {
     $ver = current_version $app $global
-    if(!$ver) { return $false }
+    if(!$ver) { $false; return }
     $info = install_info $app $ver $global
-    if(!$info) { return $true }
-    return $false
+    if(!$info) { $true; return }
+    $false
 }
 
 function ensure_none_failed($apps, $global) {
-    foreach($app in $apps) {
+    $have_failure = $false
+    if ($null -ne $apps) { foreach ($app in $apps) {
         if(failed $app $global) {
-            abort "$app install failed previously. please uninstall it and try again."
+            $have_failure = $true
+            error "$app install failed previously. please uninstall it and try again."
         }
-    }
+    }}
+    if ($have_failure) { exit 1 }
 }
 
 # travelling directories have their contents moved from
 # $from to $to when the app is updated.
 # any files or directories that already exist in $to are skipped
 function travel_dir($from, $to) {
-    $skip_dirs = get-childitem $to -dir | foreach-object { "`"$from\$_`"" }
-    $skip_files = get-childitem $to -file | foreach-object { "`"$from\$_`"" }
+    $skip_dirs = $(get-childitem $to | where-object { $_.PSIsContainer }) | foreach-object { "`"$from\$_`"" }
+    $skip_files = $(get-childitem $to | where-object { -not $_.PSIsContainer }) | foreach-object { "`"$from\$_`"" }
 
     robocopy $from $to /s /move /xd $skip_dirs /xf $skip_files > $null
 }

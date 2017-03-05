@@ -16,7 +16,7 @@ function getopt($argv, $shortopts, $longopts) {
     }
 
     function regex_escape($str) {
-        return [regex]::escape($str)
+        [regex]::escape($str)
     }
 
     # ensure these are arrays
@@ -37,14 +37,16 @@ function getopt($argv, $shortopts, $longopts) {
             if($longopt) {
                 if($longopt.endswith('=')) { # requires arg
                     if($i -eq $argv.length - 1) {
-                        return err "option --$name requires an argument"
+                        err "option --$name requires an argument"
+                        return
                     }
                     $opts.$name = $argv[++$i]
                 } else {
                     $opts.$name = $true
                 }
             } else {
-                return err "option --$name not recognized"
+                err "option --$name not recognized"
+                return
             }
         } elseif($arg.startswith('-') -and $arg -ne '-') {
             for($j = 1; $j -lt $arg.length; $j++) {
@@ -54,14 +56,16 @@ function getopt($argv, $shortopts, $longopts) {
                     $shortopt = $matches[0]
                     if($shortopt[1] -eq ':') {
                         if($j -ne $arg.length -1 -or $i -eq $argv.length - 1) {
-                            return err "option -$letter requires an argument"
+                            err "option -$letter requires an argument"
+                            return
                         }
                         $opts.$letter = $argv[++$i]
                     } else {
                         $opts.$letter = $true
                     }
                 } else {
-                    return err "option -$letter not recognized"
+                    err "option -$letter not recognized"
+                    return
                 }
             }
         } else {

@@ -1,9 +1,19 @@
-function 7zip_installed { cmd_available '7z' }
+function sevenzip_installed { cmd_available '7z' }
 
 function requires_7zip($manifest, $architecture) {
-    foreach($dlurl in @(url $manifest $architecture)) {
-        if(file_requires_7zip $dlurl) { return $true }
-    }
+    $urls = @(url $manifest $architecture)
+    if ($null -ne $urls) { foreach ($dlurl in $urls) {
+        if(file_requires_7zip $dlurl) { $true; return }
+    }}
+}
+
+function requires_lessmsi ($manifest, $architecture) {
+    $useLessMsi = get_config MSIEXTRACT_USE_LESSMSI
+    if (!$useLessMsi) { return $false }
+
+    $(url $manifest $architecture | where-object {
+        $_ -match '\.(msi)$'
+    } | measure-object | select-object -exp count) -gt 0
 }
 
 function file_requires_7zip($fname) {

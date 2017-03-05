@@ -13,10 +13,10 @@
 
 param($opt, $name, $command, $description)
 
-. "$psscriptroot\..\lib\core.ps1"
-. "$psscriptroot\..\lib\help.ps1"
-. "$psscriptroot\..\lib\config.ps1"
-. "$psscriptroot\..\lib\install.ps1"
+. "$($MyInvocation.MyCommand.Path | Split-Path | Split-Path)\lib\core.ps1"
+. $(rootrelpath "lib\help.ps1")
+. $(rootrelpath "lib\config.ps1")
+. $(rootrelpath "lib\install.ps1")
 
 $script:config_alias = "alias"
 
@@ -73,7 +73,7 @@ function rm_alias($name) {
 function list_aliases {
   $aliases = @{}
   (get_config $script:config_alias).getenumerator() | foreach-object {
-    $summary = summary (get-content (command_path $_.name) -raw)
+    $summary = summary ([System.IO.File]::ReadAllText($(resolve-path (command_path $_.name))))
     if(!($summary)) { $summary = '' }
     $aliases.add("$($_.name) ", $summary)
   }

@@ -26,7 +26,8 @@ function create_manifest($url) {
 
     $manifest.version = choose_item $url_parts "Version"
 
-    $manifest | convertto-json | out-file -filepath "$name.json" -encoding utf8
+    [System.IO.File]::WriteAllText( "$name.json", $($manifest | convertto-jsonNET) )
+
     $manifest_path = join-path $pwd "$name.json"
     write-host "Created $manifest_path"
 }
@@ -53,7 +54,8 @@ function choose_item($list, $query) {
     $sel = read-host $query
 
     if ($sel.trim() -match '^[0-9+]$') {
-        return $list[$sel-1]
+        $list[$sel-1]
+        return
     }
 
     $sel

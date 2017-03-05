@@ -1,14 +1,14 @@
 # Usage: scoop depends <app>
 # Summary: List dependencies for an app
 
-. "$psscriptroot\..\lib\depends.ps1"
-. "$psscriptroot\..\lib\install.ps1"
-. "$psscriptroot\..\lib\manifest.ps1"
-. "$psscriptroot\..\lib\buckets.ps1"
-. "$psscriptroot\..\lib\getopt.ps1"
-. "$psscriptroot\..\lib\decompress.ps1"
-. "$psscriptroot\..\lib\config.ps1"
-. "$psscriptroot\..\lib\help.ps1"
+. "$($MyInvocation.MyCommand.Path | Split-Path | Split-Path)\lib\depends.ps1"
+. "$($MyInvocation.MyCommand.Path | Split-Path | Split-Path)\lib\install.ps1"
+. "$($MyInvocation.MyCommand.Path | Split-Path | Split-Path)\lib\manifest.ps1"
+. "$($MyInvocation.MyCommand.Path | Split-Path | Split-Path)\lib\buckets.ps1"
+. "$($MyInvocation.MyCommand.Path | Split-Path | Split-Path)\lib\getopt.ps1"
+. "$($MyInvocation.MyCommand.Path | Split-Path | Split-Path)\lib\decompress.ps1"
+. "$($MyInvocation.MyCommand.Path | Split-Path | Split-Path)\lib\config.ps1"
+. "$($MyInvocation.MyCommand.Path | Split-Path | Split-Path)\lib\help.ps1"
 
 reset_aliases
 

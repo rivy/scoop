@@ -2,10 +2,11 @@ write-host -f darkyellow "[$(split-path -leaf $MyInvocation.MyCommand.Path)]"
 
 $repo_dir = (Get-Item $MyInvocation.MyCommand.Path).directory.parent.FullName
 
-$repo_files = @( Get-ChildItem $repo_dir -file -recurse -force )
+$repo_files = @( $(Get-ChildItem $repo_dir -recurse -force | where-object { -not $_.PSIsContainer }) )
 
 $project_file_exclusions = @(
     $([regex]::Escape($repo_dir.fullname)+'\\.git\\.*$')
+    $([regex]::Escape($repo_dir.fullname)+'\\vendor\\.*$')
 )
 
 describe 'Project code' {
@@ -71,6 +72,52 @@ describe 'Project code' {
         }
     }
 
+    $lint_module_name = 'PSScriptAnalyzer'
+    $lint_module_version = '1.3.0'
+    if (-not (Get-Module $lint_module_name)) {
+        $filename = [System.IO.Path]::Combine($repo_dir,"vendor\$lint_module_name\$lint_module_version\$lint_module_name.psd1")
+        import-module $(resolve-path $filename)
+    }
+    $have_delinter = Get-Module $lint_module_name
+
+    function truthy {
+        param (
+            [Parameter(Mandatory = $true, ValueFromPipeline = $true)]
+            [object]
+            $o
+        )
+        $retval = $true
+        if ($null -eq $o) { $retval = $false } else {
+        if ($o -is [bool]) { $retval = $o } else {
+        if (($o -is [int]) -or ($o -is [long]) -or ($o -is [single]) -or ($o -is [double]) -or ($o -is [decimal])) { $retval = ($o -ne 0) } else {
+            $str = [string]$o
+            if ('' -eq $str) { $retval = $false }
+            if ('0' -eq $str) { $retval = $false }
+        }}}
+        $retval
+    }
+
+    $it_desc = 'PowerShell code files have no unresolved critiques'
+    $skip = -not (truthy "$env:TEST_ALL")
+    if ($skip) { $it_desc += ' [to run: `$env:TEST_ALL=$true`]' }
+    it $it_desc -skip:$($skip -or -not $files_exist -or -not $have_delinter) {
+        $rule_exclusions = @( 'PSAvoidUsingWriteHost' )
+        $badFiles = @(
+            foreach ($file in $files)
+            {
+                if ( (Invoke-ScriptAnalyzer $file.FullName -excluderule $rule_exclusions).count )
+                {
+                    $file.FullName
+                }
+            }
+        )
+
+        if ($badFiles.Count -gt 0)
+        {
+            throw "The following files have lint warnings/errors:`n`n$($badFiles -join "`n")"
+        }
+    }
+
 }
 
 describe 'Style constraints for non-binary project files' {
@@ -116,7 +163,7 @@ describe 'Style constraints for non-binary project files' {
         $badFiles = @(
             foreach ($file in $files)
             {
-                $string = [System.IO.File]::ReadAllText($file.FullName)
+                $string = [System.IO.File]::ReadAllText($(resolve-path $file.FullName))
                 if ($string.Length -gt 0 -and $string[-1] -ne "`n")
                 {
                     $file.FullName
@@ -134,7 +181,7 @@ describe 'Style constraints for non-binary project files' {
         $badFiles = @(
             foreach ($file in $files)
             {
-                $content = Get-Content -raw $file.FullName
+                $content = [System.IO.File]::ReadAllText($(resolve-path $file.FullName))
                 $lines = [regex]::split($content, '\r\n')
                 $lineCount = $lines.Count
 

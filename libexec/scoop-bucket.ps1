@@ -16,9 +16,9 @@
 #     scoop bucket add extras
 param($cmd, $name, $repo)
 
-. "$psscriptroot\..\lib\core.ps1"
-. "$psscriptroot\..\lib\buckets.ps1"
-. "$psscriptroot\..\lib\help.ps1"
+. "$($MyInvocation.MyCommand.Path | Split-Path | Split-Path)\lib\core.ps1"
+. $(rootrelpath "lib\buckets.ps1")
+. $(rootrelpath "lib\help.ps1")
 
 reset_aliases
 
@@ -43,7 +43,7 @@ function add_bucket($name, $repo) {
     }
 
     write-host 'checking repo...' -nonewline
-    git ls-remote $repo 2>&1 > $null
+    & 'git' @( 'ls-remote', $repo ) 2>&1 > $null
     if($lastexitcode -ne 0) {
         abort "'$repo' doesn't look like a valid git repository"
     }
@@ -51,7 +51,7 @@ function add_bucket($name, $repo) {
 
     ensure $bucketsdir > $null
     $dir = ensure $dir
-    git clone "$repo" "$dir"
+    & 'git' @( 'clone',  $repo, $dir ) 2>$null
     success "$name bucket was added successfully"
 }
 

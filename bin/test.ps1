@@ -1,1 +1,0 @@
-invoke-pester $psscriptroot\..\test

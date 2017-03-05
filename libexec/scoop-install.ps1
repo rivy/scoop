@@ -15,30 +15,29 @@
 #   -a, --arch <32bit|64bit>  use the specified architecture, if the app supports it
 #   -g, --global              install the app globally
 
-. "$psscriptroot\..\lib\core.ps1"
-. "$psscriptroot\..\lib\manifest.ps1"
-. "$psscriptroot\..\lib\buckets.ps1"
-. "$psscriptroot\..\lib\decompress.ps1"
-. "$psscriptroot\..\lib\install.ps1"
-. "$psscriptroot\..\lib\versions.ps1"
-. "$psscriptroot\..\lib\help.ps1"
-. "$psscriptroot\..\lib\getopt.ps1"
-. "$psscriptroot\..\lib\depends.ps1"
-. "$psscriptroot\..\lib\config.ps1"
+. "$($MyInvocation.MyCommand.Path | Split-Path | Split-Path)\lib\core.ps1"
+. $(rootrelpath "lib\manifest.ps1")
+. $(rootrelpath "lib\buckets.ps1")
+. $(rootrelpath "lib\decompress.ps1")
+. $(rootrelpath "lib\install.ps1")
+. $(rootrelpath "lib\versions.ps1")
+. $(rootrelpath "lib\help.ps1")
+. $(rootrelpath "lib\getopt.ps1")
+. $(rootrelpath "lib\depends.ps1")
+. $(rootrelpath "lib\config.ps1")
 
 reset_aliases
 
-function ensure_none_installed($apps, $global) {
-    $app = @(all_installed $apps $global)[0] # might return more than one; just get the first
-    if($app) {
-        $global_flag = $null; if($global){$global_flag = ' --global'}
-
-        $version = @(versions $app $global)[-1]
-        if(!(install_info $app $version $global)) {
-            abort "it looks like a previous installation of $app failed.`nrun 'scoop uninstall $app$global_flag' before retrying the install."
+function warn_installed($apps, $global) {
+    $apps = @(all_installed $apps $global)
+    if ($null -ne $apps) { $apps | foreach-object {
+        $app = $_
+        if($app) {
+            $version = @(versions $app $global)[-1]
+            warn "$app ($version) is already installed. use 'scoop update $app$global_flag' to update to a newer version."
         }
-        abort "$app ($version) is already installed.`nuse 'scoop update $app$global_flag' to install a new version."
-    }
+
+    }}
 }
 
 $opt, $apps, $err = getopt $args 'ga:' 'global', 'arch='
@@ -53,7 +52,8 @@ if($global -and !(is_admin)) {
     'ERROR: you need admin rights to install global apps'; exit 1
 }
 
-ensure_none_installed $apps $global
+ensure_none_failed $apps $global
+warn_installed $apps $global
 
 $apps = install_order $apps $architecture # adds dependencies
 ensure_none_failed $apps $global
