@@ -55,6 +55,9 @@ function install_app($app, $architecture, $global) {
 
     # save info for uninstall
     save_installed_manifest $app $bucket $dir $url
+    # cleanse any PSObject properties from $bucket, making it a pure string, for conversion to JSON
+    # ToDO: track down where $bucket is originally polluted with the PSObject properties (in/for PowerShell v2)
+    $bucket = if ($null -eq $bucket) { $null } else { $("$bucket") }
     save_install_info @{ 'architecture' = $architecture; 'url' = $url; 'bucket' = $bucket } $dir
 
     success "$app ($version) was installed successfully!"
