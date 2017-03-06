@@ -48,7 +48,10 @@ function search_bucket($bucket, $query) {
 
 function download_json($url) {
     $progressPreference = 'silentlycontinue'
-    $result = invoke-webrequest $url | select-object -exp content | convertfrom-json
+    # PowerShell v2 is missing "invoke-webrequest"; ToDO: change to use `curl`?
+    try {
+        $result = invoke-webrequest $url | select-object -exp content | convertfrom-json
+    } catch { $null }
     $progressPreference = 'continue'
     $result
 }
