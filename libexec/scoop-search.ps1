@@ -51,7 +51,7 @@ function download_json($url) {
     # PowerShell v2 is missing "invoke-webrequest"; ToDO: change to use `curl`?
     try {
         $result = invoke-webrequest $url | select-object -exp content | convertfrom-json
-        } catch {}
+    } catch { $null }
     $progressPreference = 'continue'
     $result
 }
