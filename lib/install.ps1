@@ -6,15 +6,14 @@ function nightly_version($date, $quiet = $false) {
     "nightly-$date_str"
 }
 
-function install_app($app, $architecture, $global) {
-    # trace "install_app: app, architecture, global = $app, $architecture, $global"
+function install_app($app, $architecture, $global, $use_cache) {
+    # trace "install_app: app, architecture, global, use_cache = $app, $architecture, $global, $use_cache"
     $app = app_normalize $app
     # trace "install_app: app = $app"
     $app, $manifest, $url = locate $app
     $app_name = app_name $app
     # trace "install_app: app = $app"
     # trace "install_app: app_name, manifest, url = $app_name, $manifest, $url"
-    $use_cache = $true
     $check_hash = $true
 
     if(!$manifest) {
