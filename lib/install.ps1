@@ -150,16 +150,26 @@ function dl_progress($url, $to, $cookies) {
 
     $err_text = $null
     $curl_exe = $(resolve-path $(rootrelpath "vendor\curl\curl.exe"))
-    & "$curl_exe" @( $curl_options ) 2>&1 |
+    # ref: http://stackoverflow.com/questions/8097354/how-do-i-capture-the-output-into-a-variable-from-an-external-process-in-powershe/35980675#35980675 @@ http://archive.is/StIxP
+    & cmd /c "$curl_exe" @( $curl_options ) '2>&1' |
         foreach-object {
-        if( $show_progress -and ("$_" -match "\d+\.\d+%$")) {
-            write-host -nonewline ($matches[0] + ("`b" * $matches[0].Length))
-        } else { $err_text = "$_" }
+            if( $show_progress -and ("$_" -match "\d+\.\d+%$")) {
+                write-host -nonewline ($matches[0] + ("`b" * $matches[0].Length))
+            } else { $err_text = "$_"; if ( $err_text -match "^\s*$" ) { $err_text = $null } }
         }
     $err_code = $LASTEXITCODE;
+
+    # check for empty downloads if no other error has occured
+    if (($err_code -eq 0) -and ($null -eq $err_text)) {
+        $file_size = (Get-Item $to).length;
+        if (-not ($file_size -gt 0)) { $err_text = "download failure (downloaded file is empty)" }
+    }
+
     # clear progress, if used
-    if ( $show_progress ) { write-host -nonewline ((" " * 6) + ("`b" * 6)) }
-    if ($err_code -ne 0) { write-host ""; abort "[$err_code]:$err_text" };
+    if ( $show_progress ) { $n = 6; write-host -nonewline ((" " * $n) + ("`b" * $n)) }
+
+    # abort on any errors
+    if (($err_code -ne 0) -or ($null -ne $err_text)) { write-host ""; abort "[$err_code]: '$err_text'" };
 }
 
 function dl_urls($app, $version, $manifest, $architecture, $dir, $use_cache = $true, $check_hash = $true) {
