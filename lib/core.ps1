@@ -341,7 +341,7 @@ if NOT EXIST "%temp%" ( goto :_tempfile_RETURN )    &:: undefined TEMP, RETURN (
 set "_RETval=%temp%\%prefix%.%RANDOM%.%RANDOM%%extension%" &:: arbitrarily lower risk can be obtained by increasing the number of %RANDOM% entries in the file name
 if EXIST "%_RETval%" ( goto :_tempfile_find_unique_temp )
 :: instantiate tempfile
-set /p OUTPUT=<nul >"%_RETval%"
+echo|set /p OUTPUT="" >"%_RETval%"
 :_tempfile_find_unique_temp_DONE
 :_tempfile_RETURN
 endlocal & set %_RETvar%^=%_RETval%
