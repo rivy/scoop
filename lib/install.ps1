@@ -526,6 +526,7 @@ function shim_def($item) {
 }
 
 function create_shims($manifest, $dir, $global, $architecture) {
+    # trace "create_shims( `$manifest, `$dir, `$global, `$architecture ) = create_shims( $manifest, $dir, $global, $architecture )"
     $shims = @(arch_specific 'bin' $manifest $architecture)
     $shims | where-object { $null -ne $_ } | foreach-object {
         $target, $name, $arg = shim_def $_

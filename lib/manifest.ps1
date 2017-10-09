@@ -60,6 +60,7 @@ function default_architecture {
 }
 
 function arch_specific($prop, $manifest, $architecture) {
+    # trace "arch_specific( `$prop, `$manifest, `$architecture ) = arch_specific( $prop, $manifest, $architecture )"
     if($manifest.architecture) {
         $val = $manifest.architecture.$architecture.$prop
         if($val) { $val; return } # else fallback to generic prop
