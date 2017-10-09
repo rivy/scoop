@@ -27,8 +27,9 @@ if ($null -ne $args) { $args | foreach-object {
 
     $dir = resolve-path (versiondir $app $version $global)
     $manifest = installed_manifest $app $version $global
+    $architecture = $( install_info $app $version $global ).architecture
 
-    create_shims $manifest $dir $global
+    create_shims $manifest $dir $global $architecture
     env_add_path $manifest $dir $global
     env_set $manifest $dir $global
 }}
