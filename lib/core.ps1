@@ -134,18 +134,17 @@ function unzip($path,$to) {
     if(!(test-path $path)) { abort "can't find $path to unzip"}
     try { add-type -assembly "System.IO.Compression.FileSystem" -ea stop }
     catch { unzip_old $path $to; return } # for .net earlier than 4.5
-    try {
-        [io.compression.zipfile]::extracttodirectory($path,$to)
-    } catch [system.io.pathtoolongexception] {
-        # try to fall back to 7zip if path is too long
-        if(sevenzip_installed) {
-            extract_7zip $path $to $false
-            return
-        } else {
+    if(sevenzip_installed) {
+        extract_7zip $path $to $false
+    }
+    else {
+        try {
+            [io.compression.zipfile]::extracttodirectory($path,$to)
+        } catch [system.io.pathtoolongexception] {
             abort "unzip failed: Windows can't handle the long paths in this zip file.`nrun 'scoop install 7zip' and try again."
+        } catch {
+            abort "unzip failed: $_"
         }
-    } catch {
-        abort "unzip failed: $_"
     }
 }
 function unzip_old($path,$to) {
