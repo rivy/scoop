@@ -16,15 +16,15 @@ describe "travel_dir" {
     }
 
     it 'common directory remains unchanged in destination' {
-        "$to\common\version.txt" | should contain "version 1.1"
-        "$to\common with spaces\version.txt" | should contain "version 1.1"
+        "$to\common\version.txt" | should FileContentMatch "version 1.1"
+        "$to\common with spaces\version.txt" | should FileContentMatch "version 1.1"
     }
 
     it 'common directory remains unchanged in source' {
         "$from\common" | should exist
         "$from\common with spaces" | should exist
-        "$from\common\version.txt" | should contain "version 1.0"
-        "$from\common with spaces\version.txt" | should contain "version 1.0"
+        "$from\common\version.txt" | should FileContentMatch "version 1.0"
+        "$from\common with spaces\version.txt" | should FileContentMatch "version 1.0"
     }
 
     it 'old package present in new' {
@@ -40,6 +40,6 @@ describe "travel_dir" {
     }
 
     it 'common file remains unchanged in destination' {
-        "$to\common_file.txt" | should contain "version 1.1"
+        "$to\common_file.txt" | should FileContentMatch "version 1.1"
     }
 }
