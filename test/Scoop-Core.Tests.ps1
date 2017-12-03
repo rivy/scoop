@@ -18,7 +18,7 @@ describe "movedir" {
         $dir = "$working_dir\user"
         movedir "$dir\_scoop_extract\$extract_dir" "$dir\$extract_to"
 
-        "$dir\test.txt" | should contain "this is the one"
+        "$dir\test.txt" | should FileContentMatch "this is the one"
         "$dir\_scoop_extract\$extract_dir" | should not exist
     }
 
@@ -26,12 +26,12 @@ describe "movedir" {
         $dir = "$working_dir\user with space"
         movedir "$dir\_scoop_extract\$extract_dir" "$dir\$extract_to"
 
-        "$dir\test.txt" | should contain "this is the one"
+        "$dir\test.txt" | should FileContentMatch "this is the one"
         "$dir\_scoop_extract\$extract_dir" | should not exist
 
         # test trailing \ in from dir
         movedir "$dir\_scoop_extract\$null" "$dir\another"
-        "$dir\another\test.txt" | should contain "testing"
+        "$dir\another\test.txt" | should FileContentMatch "testing"
         "$dir\_scoop_extract" | should not exist
     }
 
@@ -39,7 +39,7 @@ describe "movedir" {
         $dir = "$working_dir\user with 'quote"
         movedir "$dir\_scoop_extract\$extract_dir" "$dir\$extract_to"
 
-        "$dir\test.txt" | should contain "this is the one"
+        "$dir\test.txt" | should FileContentMatch "this is the one"
         "$dir\_scoop_extract\$extract_dir" | should not exist
     }
 }
