@@ -22,7 +22,7 @@ function install_app($app, $architecture, $global, $use_cache) {
 
     $version = $manifest.version
     if(!$version) { abort "manifest doesn't specify a version" }
-    if($version -match '[^\w\.\-_]') {
+    if($version -match '[^\w._+-]') {
         abort "manifest version has unsupported character '$($matches[0])'"
     }
     ## toDO: ? warn if variant doesn't semi-match version?
