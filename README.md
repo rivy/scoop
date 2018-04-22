@@ -1,3 +1,5 @@
+<!DOCTYPE markdown><meta charset="utf-8" content="text/markdown" lang="en">
+
 `scoop` [![Build status](https://ci.appveyor.com/api/projects/status/jgckhkhe5rdd6586/branch/tr-wip?svg=true)](https://ci.appveyor.com/project/rivy/scoop/branch/tr-wip)
 =======
 
