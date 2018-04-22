@@ -48,7 +48,7 @@ switch -wildcard ($repo_domain) {
     }
     default { # github.com
         # [GitHub]
-        # (raw URL format) https://raw.github.com/OWNER/NAME/BRANCH ...
+        # (raw/CDN URL format) https://raw.github.com/OWNER/NAME/BRANCH ...
         $repo_base_raw = "https://raw.$repo_domain/$repo_owner/$repo_name/$repo_branch"
         # (BRANCH.zip URL format) https://github.com/OWNER/NAME/archive/BRANCH.zip
         $repo_branch_zip = "https://$repo_domain/$repo_owner/$repo_name/archive/$repo_branch.zip"
@@ -63,7 +63,14 @@ write-host "installing from " -nonewline; write-host "${repo_domain}:${repo_owne
 $core_url = $($repo_base_raw+'/lib/core.ps1')
 write-output 'initializing...'
 . $( [ScriptBlock]::Create((new-object net.webclient).downloadstring($core_url)) )
-# get version functions ## `installed` from core.ps1 requires versions.ps1 ## ToDO: ? move versions into `core.ps1`
+## ToDO: ? consolidate required functions for initial installation into `core.ps1`
+# get decompress functions ## decompress.ps1 is required `7z` detection and use functions
+$install_url = $($repo_base_raw+'/lib/decompress.ps1')
+. $( [ScriptBlock]::Create((new-object net.webclient).downloadstring($install_url)) )
+# get install functions ## install.ps1 is required for `curl` downloads
+$install_url = $($repo_base_raw+'/lib/install.ps1')
+. $( [ScriptBlock]::Create((new-object net.webclient).downloadstring($install_url)) )
+# get version functions ## `installed` from core.ps1 requires versions.ps1
 $versions_url = $($repo_base_raw+'/lib/versions.ps1')
 . $( [ScriptBlock]::Create((new-object net.webclient).downloadstring($versions_url)) )
 
@@ -74,6 +81,8 @@ if(installed 'scoop') {
     if ($MyInvocation.MyCommand.CommandType -eq 'Script') { return } else { exit 1 }
 }
 $dir = ensure (versiondir 'scoop' 'current')
+$projectrootpath = $dir
+$projectrootpath = $projectrootpath  ## suppress "defined, not used" message
 
 # ensure minimally liberal execution policy
 $ep = get-executionpolicy
@@ -82,13 +91,23 @@ if (-not ($ep -imatch '^(bypass|unrestricted)$')) {
     set-executionpolicy unrestricted -scope currentuser
 }
 
+# download `curl`
+$bin_dir = ensure "$dir\_bin"
+write-output "downloading ``curl``..."
+$url = "${repo_base_raw}/vendor/curl/curl.exe"
+$file = "${bin_dir}\curl.exe"
+dl $url $file
+$url = "${repo_base_raw}/vendor/curl/ca-bundle.crt"
+$file = "${bin_dir}\ca-bundle.crt"
+dl $url $file
+
 # download scoop zip
 $zipurl = $repo_branch_zip
 $zipfile = "$dir\scoop.zip"
-write-output 'downloading...'
-dl $zipurl $zipfile
+write-output "downloading archive..."
+dl_progress $zipurl $zipfile $null
 
-'extracting...'
+'extracting archive...'
 unzip $zipfile "$dir\_scoop_extract"
 copy-item "$dir\_scoop_extract\$repo_name-$repo_branch\*" $dir -r -force
 remove-item "$dir\_scoop_extract" -r -force
