@@ -66,6 +66,9 @@ write-output 'initializing...'
 # get version functions ## `installed` from core.ps1 requires versions.ps1 ## ToDO: ? move versions into `core.ps1`
 $versions_url = $($repo_base_raw+'/lib/versions.ps1')
 . $( [ScriptBlock]::Create((new-object net.webclient).downloadstring($versions_url)) )
+# get install functions ## install.ps1 is required for `curl` downloads ## ToDO: ? move dl_...() into `core.ps1`
+$install_url = $($repo_base_raw+'/lib/install.ps1')
+. $( [ScriptBlock]::Create((new-object net.webclient).downloadstring($install_url)) )
 
 # prep
 if(installed 'scoop') {
@@ -74,6 +77,8 @@ if(installed 'scoop') {
     if ($MyInvocation.MyCommand.CommandType -eq 'Script') { return } else { exit 1 }
 }
 $dir = ensure (versiondir 'scoop' 'current')
+$projectrootpath = $dir
+$projectrootpath = $projectrootpath  ## suppress "defined, not used" message
 
 # ensure minimally liberal execution policy
 $ep = get-executionpolicy
@@ -83,22 +88,22 @@ if (-not ($ep -imatch '^(bypass|unrestricted)$')) {
 }
 
 # download `curl`
-$bin_dir = ensure "$dir/_bin"
-write-output "downloading `curl`..."
-$zipurl = "${repo_base_raw}/vendor/curl/curl.exe"
-$zipfile = "${bin_dir}\curl.exe"
-dl $zipurl $zipfile
-$zipurl = "${repo_base_raw}/vendor/curl/libcurl.dll"
-$zipfile = "${bin_dir}\libcurl.dll"
-dl $zipurl $zipfile
+$bin_dir = ensure "$dir\_bin"
+write-output "downloading ``curl``..."
+$url = "${repo_base_raw}/vendor/curl/curl.exe"
+$file = "${bin_dir}\curl.exe"
+dl $url $file
+$url = "${repo_base_raw}/vendor/curl/ca-bundle.crt"
+$file = "${bin_dir}\ca-bundle.crt"
+dl $url $file
 
 # download scoop zip
 $zipurl = $repo_branch_zip
 $zipfile = "$dir\scoop.zip"
-write-output "downloading (from '$zipurl')..."
-dl $zipurl $zipfile
+write-output "downloading archive..."
+dl_progress $zipurl $zipfile $null
 
-'extracting...'
+'extracting archive...'
 unzip $zipfile "$dir\_scoop_extract"
 copy-item "$dir\_scoop_extract\$repo_name-$repo_branch\*" $dir -r -force
 remove-item "$dir\_scoop_extract" -r -force

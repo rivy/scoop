@@ -148,7 +148,7 @@ function dl_progress($url, $to, $cookies) {
     if ($null -ne $cookies) { $curl_options += @( "--cookie", (cookie_header $cookies) ) }
 
     $err_text = $null
-    $curl_exe = $(resolve-path $(rootrelpath "vendor\curl\curl.exe"))
+    $curl_exe = $(resolve-path $( resolve-path @( $(rootrelpath "vendor\curl\curl.exe"), $(rootrelpath "_bin\curl.exe") ) -ea silentlycontinue | select-object -first 1))
     # ref: http://stackoverflow.com/questions/8097354/how-do-i-capture-the-output-into-a-variable-from-an-external-process-in-powershe/35980675#35980675 @@ http://archive.is/StIxP
     & cmd /c "$curl_exe" @( $curl_options ) '2>&1' |
         foreach-object {
