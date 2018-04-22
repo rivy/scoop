@@ -48,7 +48,7 @@ switch -wildcard ($repo_domain) {
     }
     default { # github.com
         # [GitHub]
-        # (raw URL format) https://raw.github.com/OWNER/NAME/BRANCH ...
+        # (raw/CDN URL format) https://raw.github.com/OWNER/NAME/BRANCH ...
         $repo_base_raw = "https://raw.$repo_domain/$repo_owner/$repo_name/$repo_branch"
         # (BRANCH.zip URL format) https://github.com/OWNER/NAME/archive/BRANCH.zip
         $repo_branch_zip = "https://$repo_domain/$repo_owner/$repo_name/archive/$repo_branch.zip"
@@ -82,10 +82,20 @@ if (-not ($ep -imatch '^(bypass|unrestricted)$')) {
     set-executionpolicy unrestricted -scope currentuser
 }
 
+# download `curl`
+$bin_dir = ensure "$dir/_bin"
+write-output "downloading `curl`..."
+$zipurl = "${repo_base_raw}/vendor/curl/curl.exe"
+$zipfile = "${bin_dir}\curl.exe"
+dl $zipurl $zipfile
+$zipurl = "${repo_base_raw}/vendor/curl/libcurl.dll"
+$zipfile = "${bin_dir}\libcurl.dll"
+dl $zipurl $zipfile
+
 # download scoop zip
 $zipurl = $repo_branch_zip
 $zipfile = "$dir\scoop.zip"
-write-output 'downloading...'
+write-output "downloading (from '$zipurl')..."
 dl $zipurl $zipfile
 
 'extracting...'
