@@ -140,32 +140,48 @@ function dl_progress($url, $to, $cookies) {
     $curl_options += @( "-o", "`"$to`"" )
 
     $show_progress = $false
-    if(-not [console]::isoutputredirected) {
+    if(-not [console]::isoutputredirected -or -not $Host.UI.SupportsVirtualTerminal) {
         # STDOUT is not redirected, use progress meter
         $show_progress = $true
         $curl_options += @( "-#" )
-    }
+    } else { $curl_options += @( "--silent" ) }
     if ($null -ne $cookies) { $curl_options += @( "--cookie", (cookie_header $cookies) ) }
 
     $err_text = $null
     $curl_exe = $(resolve-path $( resolve-path @( $(rootrelpath "vendor\curl\curl.exe"), $(rootrelpath "_bin\curl.exe") ) -ea silentlycontinue | select-object -first 1))
     # ref: http://stackoverflow.com/questions/8097354/how-do-i-capture-the-output-into-a-variable-from-an-external-process-in-powershe/35980675#35980675 @@ http://archive.is/StIxP
+    $output_length = 0;
     & cmd /c "$curl_exe" @( $curl_options ) '2>&1' |
         foreach-object {
-            if( $show_progress -and ("$_" -match "\d+\.\d+%$")) {
-                write-host -nonewline ($matches[0] + ("`b" * $matches[0].Length))
+            if( $show_progress -and ("$_" -match "(\d+\.\d+)%$")) {
+                $progress_text = $matches[0]
+                $progress_percentage = [float]$matches[1]
+                # ref: <https://stackoverflow.com/questions/44871264/how-can-i-measure-the-window-height-number-of-lines-in-powershell/44872079#44872079> @@ <https://archive.is/tZawJ#11%>
+                if ( $Host.UI.SupportsVirtualTerminal ) {
+                    # console output
+                    write-host -nonewline $(("`b" * $output_length) + (" " * $output_length) + ("`b" * $output_length))
+                    $output_length = $progress_text.Length
+                    write-host -nonewline $progress_text
+                } else {
+                    $progress_percentage = [Math]::Min(100, [Math]::Max(0, $progress_percentage))
+                    write-progress -activity "Downloading..." -status "($progress_text% complete)" -percentcomplete $progress_percentage
+                }
             } else { $err_text = "$_"; if ( $err_text -match "^\s*$" ) { $err_text = $null } }
         }
     $err_code = $LASTEXITCODE;
+
+    # cleanup, if needed
+    if ( $show_progress ) {
+        if ( $Host.UI.SupportsVirtualTerminal ) {
+            write-host -nonewline $(("`b" * $output_length) + (" " * $output_length) + ("`b" * $output_length))
+        } else { write-progress -activity "Downloading..." -completed }
+    }
 
     # check for empty downloads if no other error has occured
     if (($err_code -eq 0) -and ($null -eq $err_text)) {
         $file_size = (Get-Item $to).length;
         if (-not ($file_size -gt 0)) { $err_text = "download failure (downloaded file is empty)" }
     }
-
-    # clear progress, if used
-    if ( $show_progress ) { $n = 6; write-host -nonewline ((" " * $n) + ("`b" * $n)) }
 
     # abort on any errors
     if (($err_code -ne 0) -or ($null -ne $err_text)) { write-host ""; abort "[$err_code]: '$err_text'" };
