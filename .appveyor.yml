@@ -9,12 +9,13 @@ init:
   - ps: (get-psprovider 'FileSystem').Home = $(pwd)
   - ps: "if($env:APPVEYOR_CHOCO_PESTER_OPTIONS -ne $null) { write-host -f yellow 'NOTE: customized `pester` installation is being used' }"
   - ps: choco install --limit-output --no-progress --yes $env:APPVEYOR_CHOCO_PESTER_OPTIONS pester
+  - ps: $env:PESTER_VERSION = $(get-module pester).Version
 
 build: off
 
 test_script:
   - ps: $env:TEST_ALL = $true
-  - ps: powershell -c "invoke-pester -quiet -script .\test -excludetag disabled,appveyor.disabled -outputfile '.\test\#TestResults.xml' -outputformat NUnitXML" | out-null
+  - ps: powershell -c "invoke-pester -show none -script .\test -excludetag disabled,appveyor.disabled -outputfile '.\test\#TestResults.xml' -outputformat NUnitXML" | out-null
   - ps: .\test\bin\summarize-results.ps1 '.\test\#TestResults.xml'
   - ps: (new-object net.webclient).uploadfile("https://ci.appveyor.com/api/testresults/nunit/$($env:APPVEYOR_JOB_ID)", (resolve-path '.\test\#TestResults.xml'))
   - ps: $env:failedcount = $([xml]$(get-content '.\test\#TestResults.xml')).'test-results'.'failures'
