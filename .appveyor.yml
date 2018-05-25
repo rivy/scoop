@@ -8,7 +8,7 @@ init:
   - ps: $PSVersionTable.keys |% {"$_ $($PSVersionTable[$_])"}
   - ps: (get-psprovider 'FileSystem').Home = $(pwd)
   - ps: "if($env:APPVEYOR_CHOCO_PESTER_OPTIONS -ne $null) { write-host -f yellow 'NOTE: customized `pester` installation is being used' }"
-  - ps: choco install --limit-output --no-progress --yes $env:APPVEYOR_CHOCO_PESTER_OPTIONS pester
+  - ps: $null = $(choco install --limit-output --no-progress --yes $env:APPVEYOR_CHOCO_PESTER_OPTIONS pester)
   - ps: $env:PESTER_VERSION = $(get-module pester).Version
 
 build: off
