@@ -46,7 +46,7 @@ if ($null -ne $args) { $args | foreach-object {
         env_rm_path $manifest $dir $global
         env_rm $manifest $global
 
-        try { remove-item -r $dir -ea stop -force ; info "'$dir' was removed" }
+        try { remove-item -r "\\?\$(resolve-path -literalpath $dir)" -ea stop -force ; info "'$dir' was removed" }
         catch { abort "couldn't remove '$dir'; it may be in use" }
     }}
 
