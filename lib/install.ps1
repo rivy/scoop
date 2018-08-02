@@ -762,3 +762,5 @@ function travel_dir($from, $to) {
 
     robocopy $from $to /s /move /xd $skip_dirs /xf $skip_files > $null
 }
+
+function add_first_in_path($dir, $global) { ensure_in_path $dir $global }
