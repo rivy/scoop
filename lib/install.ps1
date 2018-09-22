@@ -324,7 +324,7 @@ function hash_for_url($manifest, $url, $arch) {
 function check_hash($file, $url, $manifest, $arch) {
     $hash = hash_for_url $manifest $url $arch
     if(!$hash) {
-        warn "warning: no hash in manifest. sha256 is:`n$(compute_hash (fullpath $file) 'sha256')"
+        warn "no hash in manifest; sha256 is: $(compute_hash (fullpath $file) 'sha256')"
         $true
         return
     }
