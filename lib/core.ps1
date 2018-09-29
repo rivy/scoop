@@ -29,11 +29,11 @@ function is_admin {
 }
 
 # messages
-function error($msg) { write-host "ERR!: "+$msg -f darkred }
-function warn($msg) { write-host "WARN: "+$msg -f darkyellow }
+function error($msg) { write-host "ERR!: $msg" -f darkred }
+function warn($msg) { write-host "WARN: $msg" -f darkyellow }
 function info($msg) { write-host $msg -f darkcyan }
 function success($msg) { write-host $msg -f darkgreen }
-function trace($msg) { write-host ("TRACE: "+$msg) -f darkmagenta }
+function trace($msg) { write-host "TRACE: $msg" -f darkmagenta }
 
 # abort
 function abort($msg, $exit_code=-1) { error $msg; exit $exit_code }
