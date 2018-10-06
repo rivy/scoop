@@ -407,7 +407,7 @@ function unpack_inno($fname, $manifest, $dir) {
         abort "failed to unpack innosetup file. see $dir\innounp.log"
     }
 
-    get-childitem "$dir\_scoop_unpack\{app}" -r | move-item -dest "$dir" -force
+    get-childitem "$dir\_scoop_unpack" -r | move-item -dest "$dir" -force
 
     remove-item -r -force "$dir\_scoop_unpack"
 
