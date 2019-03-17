@@ -701,16 +701,24 @@ function env_rm($manifest, $global) {
 }
 
 function pre_install($manifest) {
-    $manifest.pre_install | where-object { $null -ne $_ } | foreach-object {
+    $pre_install_script = $manifest.pre_install
+    $pre_install_script = $( $pre_install_script | where-object { $null -ne $_ } )
+    if ( $pre_install_script.length -gt 0 ) {
         write-output "running pre-install script..."
-        & $( [ScriptBlock]::Create($_) ) ## aka: invoke-expression $_
+        $pre_install_script |  foreach-object {
+            & $( [ScriptBlock]::Create($_) ) ## aka: invoke-expression $_
+        }
     }
 }
 
 function post_install($manifest) {
-    $manifest.post_install | where-object { $null -ne $_ } | foreach-object {
+    $post_install_script = $manifest.post_install
+    $post_install_script = $( $post_install_script | where-object { $null -ne $_ } )
+    if ( $post_install_script.length -gt 0 ) {
         write-output "running post-install script..."
-        & $( [ScriptBlock]::Create($_) ) ## aka: invoke-expression $_
+        $post_install_script |  foreach-object {
+            & $( [ScriptBlock]::Create($_) ) ## aka: invoke-expression $_
+        }
     }
 }
 
