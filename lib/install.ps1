@@ -420,9 +420,13 @@ function run_installer($fname, $manifest, $architecture, $dir) {
     $msi = msi $manifest $architecture
     $installer = installer $manifest $architecture
 
-    if ($installer.script) {
+    $installer_script = $installer.script
+    $installer_script = $( $installer_script | where-object { $null -ne $_ } )
+    if ( $installer.script ) {
         write-output "running installer script..."
-        & $( [ScriptBlock]::Create($installer.script) ) ## aka: invoke-expression $installer.script
+        $installer_script |  foreach-object {
+            & $( [ScriptBlock]::Create($_) ) ## aka: invoke-expression $_
+        }
         return
     }
 
@@ -507,9 +511,13 @@ function run_uninstaller($manifest, $architecture, $dir) {
     $msi = msi $manifest $architecture
     $uninstaller = uninstaller $manifest $architecture
 
-    if ($uninstaller.script) {
+    $uninstaller_script = $uninstaller.script
+    $uninstaller_script = $( $uninstaller_script | where-object { $null -ne $_ } )
+    if ( $uninstaller.script ) {
         write-output "running uninstaller script..."
-        & $( [ScriptBlock]::Create($uninstaller.script) ) ## aka: invoke-expression $uninstaller.script
+        $uninstaller_script |  foreach-object {
+            & $( [ScriptBlock]::Create($_) ) ## aka: invoke-expression $_
+        }
         return
     }
 
