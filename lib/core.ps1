@@ -15,6 +15,7 @@ $default['repo.owner'] = 'rivy'
 $default['repo.name'] = 'scoop'
 $default['repo.branch'] = 'tr-wip'
 $default['repo'] = "https://$($default['repo.domain'])/$($default['repo.owner'])/$($default['repo.name'])"
+$default['repo.download.base'] = 'cdn.jsdelivr.net/gh'
 
 # helper functions
 function coalesce($a, $b) { if($a) { $a } else { $b } }

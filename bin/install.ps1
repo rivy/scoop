@@ -16,20 +16,23 @@ $erroractionpreference='stop' # quit if anything goes wrong
 # known REPO_URL origin templates
 # [BitBucket] REPO_URL == https://bitbucket.org/OWNER/NAME/raw/BRANCH  ## regex == '^https?://[^/]*?(?<domain>bitbucket.org)/(?<owner>[^/]+)/(?<name>[^/]+)/raw/(?<branch>[^/\n]+)'
 # [GitHub] REPO_URL == https://raw.github.com/OWNER/NAME/BRANCH  ## regex == '^https?://[^/]*?(?<domain>github.com)/(?<owner>[^/]+)/(?<name>[^/]+)/(?<branch>[^/\n]+)'
+# [jsDelivr] REPO_URL == https://cdn.jsdelivr.net/gh/OWNER/NAME@BRANCH' )" ## regex == '^https?://[^/]*?(?<domain>cdn.jsdelivr.net)/(?<owner>[^/]+)/(?<name>[^/]+)@(?<branch>[^/\n]+)'
 
 # default values
 $repo_domain = 'github.com'
 $repo_owner = 'rivy'
 $repo_name = 'scoop'
 $repo_branch = 'tr-wip'
+$repo_download_base = 'cdn.jsdelivr.net/gh'
 
 # read origin parameter (if supplied)
 if ($origin) {
     if ( $($origin -imatch '^https?://[^/]*?(?<domain>bitbucket.org)/(?<owner>[^/]+)/(?<name>[^/]+)/raw/(?<branch>[^/\n]+)') `
-     -or $($origin -imatch '^https?://[^/]*?(?<domain>github.com)/(?<owner>[^/]+)/(?<name>[^/]+)/(?<branch>[^/\n]+)')
+     -or $($origin -imatch '^https?://[^/]*?(?<domain>github.com)/(?<owner>[^/]+)/(?<name>[^/]+)/(?<branch>[^/\n]+)') `
+     -or $($origin -imatch '^https?://[^/]*?(?<domain>cdn.jsdelivr.net/gh)/(?<owner>[^/]+)/(?<name>[^/]+)@(?<branch>[^/\n]+)')
      )
     {
-        $repo_domain = $matches.domain
+        $repo_download_base = $matches.domain
         $repo_owner = $matches.owner
         $repo_name = $matches.name
         $repo_branch = $matches.branch
@@ -37,21 +40,29 @@ if ($origin) {
 }
 
 # build origin URLs
-switch -wildcard ($repo_domain) {
+switch -wildcard ($download_domain) {
     "bitbucket.org" {
         # [Bitbucket]
         # (raw URL format) https://bitbucket.org/OWNER/NAME/raw/BRANCH ...
-        $repo_base_raw = "https://$repo_domain/$repo_owner/$repo_name/raw/$repo_branch"
+        $repo_base_raw = "https://$repo_download_base/$repo_owner/$repo_name/raw/$repo_branch"
         # (BRANCH.zip URL format) https://bitbucket.org/OWNER/NAME/get/BRANCH.zip
-        $repo_branch_zip = "https://$repo_domain/$repo_owner/$repo_name/get/$repo_branch.zip"
+        $repo_branch_zip = "https://$repo_download_base/$repo_owner/$repo_name/get/$repo_branch.zip"
         break;
     }
-    default { # github.com
+    "github.com" {
         # [GitHub]
         # (raw/CDN URL format) https://raw.github.com/OWNER/NAME/BRANCH ...
-        $repo_base_raw = "https://raw.$repo_domain/$repo_owner/$repo_name/$repo_branch"
+        $repo_base_raw = "https://raw.$download_domain/$repo_owner/$repo_name/$repo_branch"
         # (BRANCH.zip URL format) https://github.com/OWNER/NAME/archive/BRANCH.zip
-        $repo_branch_zip = "https://$repo_domain/$repo_owner/$repo_name/archive/$repo_branch.zip"
+        $repo_branch_zip = "https://$repo_download_base/$repo_owner/$repo_name/archive/$repo_branch.zip"
+        break;
+    }
+    default {
+        # [jsDelivr]
+        # (raw/CDN URL format) https://cdn.jsdelivr.net/gh/OWNER/NAME@BRANCH ...
+        $repo_base_raw = "https://$repo_download_base/$repo_owner/$repo_name@$repo_branch"
+        # (BRANCH.zip URL format) https://github.com/OWNER/NAME/archive/BRANCH.zip
+        $repo_branch_zip = "https://github.com/$repo_owner/$repo_name/archive/$repo_branch.zip"
         break;
     }
 }
