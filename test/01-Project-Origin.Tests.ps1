@@ -28,14 +28,20 @@ describe 'Project origin' {
         $text = $text['README']
         # ex (alt#1): ... 'https://raw.github.com/rivy/scoop/master/bin/install.ps1' |%{&$([ScriptBlock] ...
         $regex = "'" + 'https?://.*?' +
-            [regex]::escape("$($default['repo.domain'])/$($default['repo.owner'])/$($default['repo.name'])/$($default['repo.branch'])/bin/install.ps1") +
+            '(' + [regex]::escape("$($default['repo.domain'])") + '|' + [regex]::escape("$($default['cdn.domain'])") + ')' +
+            [regex]::escape("/$($default['repo.owner'])/$($default['repo.name'])") +
+            '.*?' +
+            [regex]::escape("$($default['repo.branch'])/bin/install.ps1") +
             "'" + '\s*`|\s*\%\s*\{\s*\&\s*\$\s*\(\s*\[\s*(?i:ScriptBlock)\s*\]'
         $m = [regex]::matches($text, $regex)
-        if (-not $m.sucess) {
+        if (-not $m.success) {
             # ex (alt#2): iex (new-object net.webclient).downloadstring( 'https://raw.github.com/rivy/scoop/master/bin/install.ps1' )
             $regex = 'iex\s+\(\s*new-object\s+net\.webclient\)\.downloadstring\s*\(\s*' +
                 "'" + 'https?://.*?' +
-                [regex]::escape("$($default['repo.domain'])/$($default['repo.owner'])/$($default['repo.name'])/$($default['repo.branch'])/bin/install.ps1") +
+                '(' + [regex]::escape("$($default['repo.domain'])") + '|' + [regex]::escape("$($default['cdn.domain'])") + ')' +
+                [regex]::escape("/$($default['repo.owner'])/$($default['repo.name'])") +
+                '[/@]' +
+                [regex]::escape("$($default['repo.branch'])/bin/install.ps1") +
                 "'" + '\s*\)'
             $m = [regex]::matches($text, $regex)
         }
@@ -52,13 +58,15 @@ describe 'Project origin' {
         # $repo_owner = 'rivy'
         # $repo_name = 'scoop'
         # $repo_branch = 'master'
-        $keys = @( 'domain', 'owner', 'name', 'branch' )
+        # $repo_download_base = 'cdn.jsdelivr.net/gh'
+        $keys = @( 'domain', 'owner', 'name', 'branch', 'download.base' )
         $text = $text['install']
         $bad_keys = @(
             foreach ($key in $keys)
             {
                 $k = 'repo.' + $key
-                $regex = '(?ms)' + '^\s*\$repo_' + [regex]::escape($key) + '\s*=\s*' + "['`"]" + [regex]::escape($default[$k]) + "['`"]" + '\s*$'
+                $varname = $k -replace "[.]","_"
+                $regex = '(?ms)' + '^\s*[$]' + [regex]::escape($varname) + '\s*=\s*' + "['`"]" + [regex]::escape($default[$k]) + "['`"]" + '\s*$'
                 if (-not ([regex]::match($text, $regex).success))
                 {
                     $key

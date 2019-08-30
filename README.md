@@ -26,12 +26,12 @@ To install, paste either of the following set of command strings at the respecti
 
 ##### CMD Shell &middot; `C:\>`
 
-    powershell -command "iex (new-object net.webclient).downloadstring( 'https://raw.github.com/rivy/scoop/tr-wip/bin/install.ps1' )"
+    powershell -command "iex (new-object net.webclient).downloadstring( 'https://cdn.jsdelivr.net/gh/rivy/scoop@tr-wip/bin/install.ps1' )"
     set PATH=%PATH%;%LOCALAPPDATA%\scoop\shims
 
 ##### PowerShell &middot; `PS C:\>`
 
-    iex (new-object net.webclient).downloadstring( 'https://raw.github.com/rivy/scoop/tr-wip/bin/install.ps1' )
+    iex (new-object net.webclient).downloadstring( 'https://cdn.jsdelivr.net/gh/rivy/scoop@tr-wip/bin/install.ps1' )
 
 Once installed, run `scoop help` for instructions.
 
