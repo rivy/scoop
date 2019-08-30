@@ -129,13 +129,14 @@ function dl_with_cache($app, $version, $url, $to, $cookies, $use_cache = $true) 
     copy-item $cached $to
 }
 
-function dl_progress($url, $to, $cookies) {
+function dl_progress($url, $to, $cookies, $options) {
     $uri = [system.uri]$url
 
     $curl_options = @( "`"$uri`"" )
     ## -f : fail silently (no output at all) on HTTP errors [HTTP error code => $LASTEXITCODE]
     ## -L : follow redirects
     $curl_options += @( "-f", "-L" )
+    $curl_options += $options
 
     $curl_options += @( "-o", "`"$to`"" )
 
