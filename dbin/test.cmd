@@ -1,1 +1,1 @@
-@powershell -c "invoke-pester %~dp0\..\test"
+@powershell -c "$v_min = '4.0.7' ; $v = $(Get-Module -ListAvailable -name 'Pester').version ; if ($v -ge [System.Version]::Parse($v_min)) { invoke-pester \"%~dp0\..\test\"  } else { write-host \"Testing requires at least v${v_min} of ``pester`` (only v${v} is installed)`nUse PowerShell to upgrade with ``Install-Module -Name Pester -Force -RequiredVersion ${v_min}``\" }"
