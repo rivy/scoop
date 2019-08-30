@@ -144,7 +144,7 @@ function dl_progress($url, $to, $cookies, $options) {
     if(-not [console]::isoutputredirected -or -not $Host.UI.SupportsVirtualTerminal) {
         # STDOUT is not redirected, use progress meter
         $show_progress = $true
-        $curl_options += @( "-#" )
+        $curl_options += @( "--progress-bar" )
     } else { $curl_options += @( "--silent" ) }
     if ($null -ne $cookies) { $curl_options += @( "--cookie", (cookie_header $cookies) ) }
 
@@ -152,6 +152,7 @@ function dl_progress($url, $to, $cookies, $options) {
     $curl_exe = $(resolve-path $( resolve-path @( $(rootrelpath "vendor\curl\curl.exe"), $(rootrelpath "_bin\curl.exe") ) -ea silentlycontinue | select-object -first 1))
     # ref: http://stackoverflow.com/questions/8097354/how-do-i-capture-the-output-into-a-variable-from-an-external-process-in-powershe/35980675#35980675 @@ http://archive.is/StIxP
     $output_length = 0;
+    write-host "[cmd /c `"$curl_exe`" @( $curl_options ) '2>&1' ]"
     & cmd /c "$curl_exe" @( $curl_options ) '2>&1' |
         foreach-object {
             if( $show_progress -and ("$_" -match "(\d+\.\d+)%$")) {
@@ -175,7 +176,7 @@ function dl_progress($url, $to, $cookies, $options) {
     if ( $show_progress ) {
         if ( $Host.UI.SupportsVirtualTerminal ) {
             write-host -nonewline $(("`b" * $output_length) + (" " * $output_length) + ("`b" * $output_length))
-        } else { write-progress -activity "Downloading..." -completed }
+        } else { write-progress -activity "Downloading..." -status "(100% complete)" -completed }
     }
 
     # check for empty downloads if no other error has occured
