@@ -104,9 +104,9 @@ if (-not ($ep -imatch '^(bypass|unrestricted)$')) {
 
 # download `curl`
 $bin_dir = ensure "$dir\_bin"
-write-output "downloading ``curl``..."
 $url = "${repo_base_raw}/vendor/curl/curl.exe"
 $file = "${bin_dir}\curl.exe"
+write-output "downloading ``curl`` (from "${url}")..."
 dl $url $file
 $url = "${repo_base_raw}/vendor/curl/ca-bundle.crt"
 $file = "${bin_dir}\ca-bundle.crt"
