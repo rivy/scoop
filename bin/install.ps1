@@ -17,6 +17,7 @@ $erroractionpreference='stop' # quit if anything goes wrong
 # [BitBucket] REPO_URL == https://bitbucket.org/OWNER/NAME/raw/BRANCH  ## regex == '^https?://[^/]*?(?<domain>bitbucket.org)/(?<owner>[^/]+)/(?<name>[^/]+)/raw/(?<branch>[^/\n]+)'
 # [GitHub] REPO_URL == https://raw.github.com/OWNER/NAME/BRANCH  ## regex == '^https?://[^/]*?(?<domain>github.com)/(?<owner>[^/]+)/(?<name>[^/]+)/(?<branch>[^/\n]+)'
 # [jsDelivr] REPO_URL == https://cdn.jsdelivr.net/gh/OWNER/NAME@BRANCH' )" ## regex == '^https?://[^/]*?(?<domain>cdn.jsdelivr.net)/(?<owner>[^/]+)/(?<name>[^/]+)@(?<branch>[^/\n]+)'
+# [statically] REPO_URL == https://cdn.statically.io/gh/OWNER/NAME/BRANCH' )" ## regex == '^https?://[^/]*?(?<domain>cdn.statically.io)/(?<owner>[^/]+)/(?<name>[^/]+)/(?<branch>[^/\n]+)'
 
 # default values
 $repo_domain = 'github.com'
@@ -30,7 +31,7 @@ if ($origin) {
     if ( $($origin -imatch '^https?://[^/]*?(?<domain>bitbucket.org)/(?<owner>[^/]+)/(?<name>[^/]+)/raw/(?<branch>[^/\n]+)') `
      -or $($origin -imatch '^https?://[^/]*?(?<domain>github.com)/(?<owner>[^/]+)/(?<name>[^/]+)/(?<branch>[^/\n]+)') `
      -or $($origin -imatch '^https?://[^/]*?(?<domain>cdn.jsdelivr.net/gh)/(?<owner>[^/]+)/(?<name>[^/]+)@(?<branch>[^/\n]+)') `
-     -or $($origin -imatch '^https?://[^/]*?(?<domain>cdn.statically.io/gh)/(?<owner>[^/]+)/(?<name>[^/]+)@(?<branch>[^/\n]+)')
+     -or $($origin -imatch '^https?://[^/]*?(?<domain>cdn.statically.io/gh)/(?<owner>[^/]+)/(?<name>[^/]+)/(?<branch>[^/\n]+)')
      )
     {
         $repo_download_base = $matches.domain
@@ -76,7 +77,7 @@ switch -wildcard ($download_domain) {
     }
 }
 
-write-host "installing from " -nonewline; write-host "${repo_domain}:${repo_owner}/${repo_name}@${repo_branch}" -f yellow
+write-host "installing from " -nonewline; write-host "${repo_download_base}:${repo_owner}/${repo_name}@${repo_branch}" -f yellow
 
 # get required functions
 # get core functions
