@@ -6,7 +6,7 @@ function nightly_version($date, $quiet = $false) {
     "nightly-$date_str"
 }
 
-function install_app($app, $architecture, $global, $use_cache) {
+function install_app($app, $architecture, $global, $use_cache, $allow_insecure) {
     # trace "install_app: app, architecture, global, use_cache = $app, $architecture, $global, $use_cache"
     $app = app_normalize $app
     # trace "install_app: app = $app"
@@ -46,7 +46,7 @@ function install_app($app, $architecture, $global, $use_cache) {
 
     $dir = ensure (versiondir $app $version $global)
 
-    $fname = dl_urls $app $version $manifest $architecture $dir $use_cache $check_hash
+    $fname = dl_urls $app $version $manifest $architecture $dir $use_cache $check_hash $allow_insecure
     unpack_inno $fname $manifest $dir
     pre_install $manifest
     run_installer $fname $manifest $architecture $dir
@@ -115,28 +115,31 @@ function locate($app) {
     $app, $manifest, $url
 }
 
-function dl_with_cache($app, $version, $url, $to, $cookies, $use_cache = $true) {
+function dl_with_cache($app, $version, $url, $to, $cookies, $use_cache = $true, $allow_insecure=$false) {
     $cached = fullpath (cache_path $app $version $url)
     if(!$use_cache) { warn "cache is being ignored" }
 
     if(!(test-path $cached) -or !$use_cache) {
         $null = ensure $(cachedir)
         write-host "downloading $url..." -nonewline
-        dl_progress $url "$cached.download" $cookies
+        dl_progress $url "$cached.download" $allow_insecure $cookies
         move-item "$cached.download" $cached -force
         write-host "done"
     } else { write-host "loading $url from cache..."}
     copy-item $cached $to
 }
 
-function dl_progress($url, $to, $cookies, $options) {
+function dl_progress($url, $to, $allow_insecure, $cookies) {
     $uri = [system.uri]$url
 
     $curl_options = @( "`"$uri`"" )
     ## -f : fail silently (no output at all) on HTTP errors [HTTP error code => $LASTEXITCODE]
     ## -L : follow redirects
     $curl_options += @( "-f", "-L" )
-    $curl_options += $options
+    if ($allow_insecure) {
+        warn "insecure downloads (without SSL checks) are being allowed"
+        $curl_options += @( "--insecure" )
+    }
 
     $curl_options += @( "-o", "`"$to`"" )
 
@@ -189,7 +192,7 @@ function dl_progress($url, $to, $cookies, $options) {
     if (($err_code -ne 0) -or ($null -ne $err_text)) { write-host ""; abort "[$err_code]: '$err_text'" };
 }
 
-function dl_urls($app, $version, $manifest, $architecture, $dir, $use_cache = $true, $check_hash = $true) {
+function dl_urls($app, $version, $manifest, $architecture, $dir, $use_cache = $true, $check_hash = $true, $allow_insecure=$false) {
     # can be multiple urls: if there are, then msi or installer should go last,
     # so that $fname is set properly
     $urls = @(url $manifest $architecture)
@@ -210,7 +213,7 @@ function dl_urls($app, $version, $manifest, $architecture, $dir, $use_cache = $t
         $uri = [System.URI]$url
         $fname = split-path $($uri.LocalPath + $uri.Fragment) -leaf
 
-        dl_with_cache $app $version $url "$dir\$fname" $cookies $use_cache
+        dl_with_cache $app $version $url "$dir\$fname" $cookies $use_cache $allow_insecure
 
         if($check_hash) {
             $ok, $err = check_hash "$dir\$fname" $url $manifest $architecture
