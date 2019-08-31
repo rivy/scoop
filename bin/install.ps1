@@ -144,7 +144,7 @@ dl_progress $zipurl $zipfile $null "-k"
 
 'extracting ``scoop`` package archive ...'
 unzip $zipfile "$dir\_scoop_extract"
-copy-item "$dir\_scoop_extract\$repo_name-$repo_branch\*" $dir -r -force
+copy-item "$dir\_scoop_extract\$repo_name-*\*" $dir -r -force
 remove-item "$dir\_scoop_extract" -r -force
 remove-item $zipfile
 

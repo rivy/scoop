@@ -144,7 +144,7 @@ function dl_progress($url, $to, $cookies, $options) {
     if(-not [console]::isoutputredirected -or -not $Host.UI.SupportsVirtualTerminal) {
         # STDOUT is not redirected, use progress meter
         $show_progress = $true
-        $curl_options += @( "-#" )
+        $curl_options += @( "--progress-bar" )
     } else { $curl_options += @( "--silent" ) }
     if ($null -ne $cookies) { $curl_options += @( "--cookie", (cookie_header $cookies) ) }
 
