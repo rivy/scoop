@@ -176,7 +176,7 @@ function dl_progress($url, $to, $cookies, $options) {
     if ( $show_progress ) {
         if ( $Host.UI.SupportsVirtualTerminal ) {
             write-host -nonewline $(("`b" * $output_length) + (" " * $output_length) + ("`b" * $output_length))
-        } else { write-progress -activity "Downloading..." -completed }
+        } else { write-progress -activity "Downloading..." -status "(100% complete)" -completed }
     }
 
     # check for empty downloads if no other error has occured
