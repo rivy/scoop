@@ -14,7 +14,8 @@
 # Options:
 #   -a, --arch <32bit|64bit>  use the specified architecture, if the app supports it
 #   -g, --global              install the app globally
-#   -k, --no-cache            don't use the download cache (note: will overwrite any cached copy)
+#   -C, --no-cache            don't use the download cache (note: will overwrite any cached copy)
+#   -k, --insecure            allow insecure downloads (skip SSL certificate verification)
 
 . "$($MyInvocation.MyCommand.Path | Split-Path | Split-Path)\lib\core.ps1"
 . $(rootrelpath "lib\manifest.ps1")
@@ -40,12 +41,13 @@ function warn_installed($apps, $global) {
     }}
 }
 
-$opt, $apps, $err = getopt $args 'ga:k' 'global', 'arch=', 'no-cache'
+$opt, $apps, $err = getopt $args 'a:Cgk' 'arch=', 'no-cache', 'global', 'insecure'
 if($err) { "scoop install: $err"; exit 1 }
 
-$global = $opt.g -or $opt.global
 $architecture = ensure_architecture $opt.a + $opt.arch
-$use_cache = !($opt.k -or $opt.'no-cache')
+$use_cache = !($opt.C -or $opt.'no-cache')
+$global = $opt.g -or $opt.global
+$allow_insecure = $opt.k -or $opt.insecure
 
 if(!$apps) { 'ERROR: <app> missing'; my_usage; exit 1 }
 
@@ -63,6 +65,6 @@ ensure_none_failed $apps $global
 $apps = prune_installed $apps $global # removes dependencies that are already installed
 # trace "3:apps = $apps"
 
-$apps | foreach-object { install_app $_ $architecture $global $use_cache }
+$apps | foreach-object { install_app $_ $architecture $global $use_cache $allow_insecure }
 
 exit 0

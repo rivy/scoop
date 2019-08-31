@@ -139,8 +139,10 @@ dl $url $file
 # download scoop zip
 $zipurl = $repo_branch_zip
 $zipfile = "$dir\scoop.zip"
+$allow_insecure = $true
+$cookies = $null
 write-output "[``scoop`` package] from `"${zipurl}`" ..."
-dl_progress $zipurl $zipfile $null "-k"
+dl_progress $zipurl $zipfile $allow_insecure $cookies
 
 'extracting ``scoop`` package archive ...'
 unzip $zipfile "$dir\_scoop_extract"
