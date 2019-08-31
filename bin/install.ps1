@@ -29,10 +29,10 @@ $repo_download_base = 'cdn.statically.io/gh'
 # read origin parameter (if supplied)
 if ($origin) {
     if ( $($origin -imatch '^https?://[^/]*?(?<domain>bitbucket.org)/(?<owner>[^/]+)/(?<name>[^/]+)/raw/(?<branch>[^/\n]+)') `
-     -or $($origin -imatch '^https?://[^/]*?(?<domain>github.com)/(?<owner>[^/]+)/(?<name>[^/]+)/(?<branch>[^/\n]+)') `
-     -or $($origin -imatch '^https?://[^/]*?(?<domain>cdn.jsdelivr.net/gh)/(?<owner>[^/]+)/(?<name>[^/]+)@(?<branch>[^/\n]+)') `
-     -or $($origin -imatch '^https?://[^/]*?(?<domain>cdn.statically.io/gh)/(?<owner>[^/]+)/(?<name>[^/]+)/(?<branch>[^/\n]+)')
-     )
+        -or $($origin -imatch '^https?://[^/]*?(?<domain>github.com)/(?<owner>[^/]+)/(?<name>[^/]+)/(?<branch>[^/\n]+)') `
+        -or $($origin -imatch '^https?://[^/]*?(?<domain>cdn.jsdelivr.net/gh)/(?<owner>[^/]+)/(?<name>[^/]+)@(?<branch>[^/\n]+)') `
+        -or $($origin -imatch '^https?://[^/]*?(?<domain>cdn.statically.io/gh)/(?<owner>[^/]+)/(?<name>[^/]+)/(?<branch>[^/\n]+)')
+        )
     {
         $repo_download_base = $matches.domain
         $repo_owner = $matches.owner
@@ -67,7 +67,7 @@ switch -wildcard ($download_domain) {
         $repo_branch_zip = "https://github.com/$repo_owner/$repo_name/archive/$repo_branch.zip"
         break;
     }
-    default {
+    default { # "cdn.statically.io/gh"
         # [statically.io]
         # (raw/CDN URL format) https://cdn.statically.io/gh/OWNER/NAME/BRANCH ...
         $repo_base_raw = "https://$repo_download_base/$repo_owner/$repo_name/$repo_branch"
