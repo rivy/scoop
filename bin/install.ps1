@@ -27,6 +27,7 @@ $repo_branch = 'tr-wip'
 $repo_download_base = 'cdn.statically.io/gh'
 
 # read origin parameter (if supplied)
+write-host "origin=`"$origin`""
 if ($origin) {
     if ( $($origin -imatch '^https?://[^/]*(?<domain>bitbucket.org)/(?<owner>[^/]+)/(?<name>[^/]+)/raw/(?<branch>[^/\n]+)') `
         -or $($origin -imatch '^https?://[^/]*(?<domain>github.com)/(?<owner>[^/]+)/(?<name>[^/]+)/(?<branch>[^/\n]+)') `
