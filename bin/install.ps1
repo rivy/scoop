@@ -27,6 +27,8 @@ $repo_branch = 'tr-wip'
 $repo_download_base = 'cdn.statically.io/gh'
 
 # read origin parameter (if supplied)
+$p = $MyInvocation.MyCommand.Path
+write-host "p=$p"
 write-host "origin=`"$origin`""
 if ($origin) {
     if ( $($origin -imatch '^https?://[^/]*(?<domain>bitbucket.org)/(?<owner>[^/]+)/(?<name>[^/]+)/raw/(?<branch>[^/\n]+)') `
