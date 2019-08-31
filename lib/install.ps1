@@ -635,8 +635,8 @@ function rm_startmenu_shortcuts($manifest, $global) {
         $name = $_.item(1)
         $shortcut = "$env:USERPROFILE\Start Menu\Programs\$name.lnk"
         if(Test-Path -Path $shortcut) {
-             Remove-Item $shortcut
-             write-output "Removed shortcut $shortcut"
+            Remove-Item $shortcut
+            write-output "Removed shortcut $shortcut"
         }
     }
 }
