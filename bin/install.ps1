@@ -28,10 +28,10 @@ $repo_download_base = 'cdn.statically.io/gh'
 
 # read origin parameter (if supplied)
 if ($origin) {
-    if ( $($origin -imatch '^https?://[^/]*?(?<domain>bitbucket.org)/(?<owner>[^/]+)/(?<name>[^/]+)/raw/(?<branch>[^/\n]+)') `
-        -or $($origin -imatch '^https?://[^/]*?(?<domain>github.com)/(?<owner>[^/]+)/(?<name>[^/]+)/(?<branch>[^/\n]+)') `
-        -or $($origin -imatch '^https?://[^/]*?(?<domain>cdn.jsdelivr.net/gh)/(?<owner>[^/]+)/(?<name>[^/]+)@(?<branch>[^/\n]+)') `
-        -or $($origin -imatch '^https?://[^/]*?(?<domain>cdn.statically.io/gh)/(?<owner>[^/]+)/(?<name>[^/]+)/(?<branch>[^/\n]+)')
+    if ( $($origin -imatch '^https?://[^/]*(?<domain>bitbucket.org)/(?<owner>[^/]+)/(?<name>[^/]+)/raw/(?<branch>[^/\n]+)') `
+        -or $($origin -imatch '^https?://[^/]*(?<domain>github.com)/(?<owner>[^/]+)/(?<name>[^/]+)/(?<branch>[^/\n]+)') `
+        -or $($origin -imatch '^https?://[^/]*(?<domain>cdn.jsdelivr.net/gh)/(?<owner>[^/]+)/(?<name>[^/]+)@(?<branch>[^/\n]+)') `
+        -or $($origin -imatch '^https?://[^/]*(?<domain>cdn.statically.io/gh)/(?<owner>[^/]+)/(?<name>[^/]+)/(?<branch>[^/\n]+)')
         )
     {
         $repo_download_base = $matches.domain
