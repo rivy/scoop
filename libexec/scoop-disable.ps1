@@ -9,19 +9,19 @@
 . $(rootrelpath "lib\versions.ps1")
 . $(rootrelpath "lib\getopt.ps1")
 
-if(!$args) { 'ERROR: <app> missing'; my_usage; exit 1 }
+if(!$args) { error '<app> missing'; my_usage; exit 1 }
 
 if ($null -ne $args) { $args | foreach-object {
 
     $app = $_
 
     if($app -eq 'scoop') {
-        "ERROR: you can't disable scoop"; exit 1
+        error "you can't disable scoop"; exit 1
     }
 
     $global = installed $app $true
     if($global -and !(is_admin)) {
-        'ERROR: you need admin rights to disable global apps'; exit 1
+        error 'you need admin rights to disable global apps'; exit 1
     }
 
     $version = current_version $app $global

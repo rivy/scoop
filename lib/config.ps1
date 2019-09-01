@@ -39,7 +39,7 @@ function load_cfg {
     try {
         [System.IO.File]::ReadAllText($(resolve-path $cfgpath)) | convertfrom-jsonNET -ea stop
     } catch {
-        write-host "ERROR loading $cfgpath`: $($_.exception.message)"
+        write-host "ERR!: ERROR loading $cfgpath`: $($_.exception.message)"
     }
 }
 

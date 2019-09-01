@@ -48,10 +48,10 @@ $use_cache = !($opt.C -or $opt.'no-cache')
 $global = $opt.g -or $opt.global
 $allow_insecure = $opt.k -or $opt.insecure
 
-if(!$apps) { 'ERROR: <app> missing'; my_usage; exit 1 }
+if(!$apps) { error '<app> missing'; my_usage; exit 1 }
 
 if($global -and !(is_admin)) {
-    'ERROR: you need admin rights to install global apps'; exit 1
+    error 'you need admin rights to install global apps'; exit 1
 }
 
 ensure_none_failed $apps $global

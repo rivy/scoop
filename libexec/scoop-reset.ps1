@@ -10,14 +10,14 @@
 . $(rootrelpath "lib\install.ps1")
 . $(rootrelpath "lib\versions.ps1")
 
-if(!$args) { 'ERROR: <app> missing'; my_usage; exit 1 }
+if(!$args) { error '<app> missing'; my_usage; exit 1 }
 
 if ($null -ne $args) { $args | foreach-object {
     $app = $_
 
     $global = installed $app $true
     if($global -and !(is_admin)) {
-        'ERROR: you need admin rights to reset global apps'; exit 1
+        error 'you need admin rights to reset global apps'; exit 1
     }
 
     if(!(installed $app $global)) { abort "$app isn't installed" }

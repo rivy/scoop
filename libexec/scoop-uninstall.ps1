@@ -9,7 +9,7 @@
 . $(rootrelpath "lib\versions.ps1")
 . $(rootrelpath "lib\getopt.ps1")
 
-if(!$args) { error 'ERROR: <app> argument missing'; my_usage; exit 1 }
+if(!$args) { error '<app> argument missing'; my_usage; exit 1 }
 
 if ($null -ne $args) { $args | foreach-object {
     $app = $_
@@ -20,7 +20,7 @@ if ($null -ne $args) { $args | foreach-object {
 
     $global = installed $app $true
     if($global -and !(is_admin)) {
-        error 'ERROR: you need admin rights to disable global apps'; exit 1
+        error 'you need admin rights to disable global apps'; exit 1
     }
 
     $versions = @( versions $app )

@@ -5,7 +5,7 @@
 . "$($MyInvocation.MyCommand.Path | Split-Path | Split-Path)\lib\core.ps1"
 . $(rootrelpath "lib\help.ps1")
 
-if(!$args) { 'ERROR: <command> missing'; my_usage; exit 1 }
+if(!$args) { error '<command> missing'; my_usage; exit 1 }
 
 if ($null -ne $args) { $args | foreach-object {
     $command = $_
