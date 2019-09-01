@@ -118,7 +118,7 @@ function env { param($name,$value,$targetEnvironment)
         elseif (($targetEnvironment -eq 'Global') -or ($targetEnvironment -eq 'Machine')) { $targetEnvironment = [System.EnvironmentVariableTarget]::Machine }
         elseif ($targetEnvironment -is [System.EnvironmentVariableTarget]) { <# NoOP #> }
         else {
-            throw "ERROR: logic: incorrect targetEnvironment parameter ('$targetEnvironment') used for env()"
+            throw "ERR!: logic: incorrect targetEnvironment parameter ('$targetEnvironment') used for env()"
         }
     }
     else { $targetEnvironment = [System.EnvironmentVariableTarget]::Process }
@@ -280,7 +280,7 @@ call :_tempfile __pipe "%__ME%.pipe" ".bat"
 if NOT DEFINED __pipe ( goto :TEMPFILE_ERROR )
 goto :TEMPFILES_FOUND
 :TEMPFILES_ERROR
-echo %__ME%: ERROR: unable to open needed temporary file(s) [make sure to set TEMP or TMP to an available writable temporary directory {try "set TEMP=%%LOCALAPPDATA%%\Temp"}] 1>&2
+echo %__ME%: ERR!: unable to open needed temporary file(s) [make sure to set TEMP or TMP to an available writable temporary directory {try "set TEMP=%%LOCALAPPDATA%%\Temp"}] 1>&2
 goto __nonexistent_label_to_shift_into_command_line_context__ 2>NUL || %COMSPEC% /c exit -1
 :TEMPFILES_FOUND
 '

@@ -244,7 +244,7 @@ if(!$apps) {
     update_scoop
 } else {
     if($global -and !(is_admin)) {
-        'ERROR: you need admin rights to update global apps'; exit 1
+        error 'you need admin rights to update global apps'; exit 1
     }
 
     if($apps -eq '*') {
