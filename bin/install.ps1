@@ -47,7 +47,7 @@ if ($origin) {
 }
 
 # build origin URLs
-switch -wildcard ($download_domain) {
+switch -wildcard ($repo_download_base) {
     "bitbucket.org" {
         # [Bitbucket]
         # (raw URL format) https://bitbucket.org/OWNER/NAME/raw/BRANCH ...
@@ -59,7 +59,7 @@ switch -wildcard ($download_domain) {
     "github.com" {
         # [GitHub]
         # (raw/CDN URL format) https://raw.github.com/OWNER/NAME/BRANCH ...
-        $repo_base_raw = "https://raw.$download_domain/$repo_owner/$repo_name/$repo_branch"
+        $repo_base_raw = "https://raw.$repo_download_base/$repo_owner/$repo_name/$repo_branch"
         # (BRANCH.zip URL format) https://github.com/OWNER/NAME/archive/BRANCH.zip
         $repo_branch_zip = "https://$repo_download_base/$repo_owner/$repo_name/archive/$repo_branch.zip"
         break;
