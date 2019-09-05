@@ -20,6 +20,7 @@ $erroractionpreference='stop' # quit if anything goes wrong
 # [statically] REPO_URL == https://cdn.statically.io/gh/OWNER/NAME/BRANCH' )" ## regex == '^https?://[^/]*?(?<domain>cdn.statically.io)/(?<owner>[^/]+)/(?<name>[^/]+)/(?<branch>[^/\n]+)'
 
 # default values
+[Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSDeclaredVarsMoreThanAssignments", Target="repo_domain")] ## repo_domain is used by comparison tests of cross-file defaults
 $repo_domain = 'github.com'
 $repo_owner = 'rivy'
 $repo_name = 'scoop'
