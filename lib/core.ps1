@@ -96,7 +96,12 @@ function split_pathlist($pathlist) {
     # PATHLIST == semicolon separated paths (possibly double-quoted with internal semicolons)
     # RETURN = array of normalized paths
     $regex = ';(?=(?:[^\"]*\"[^\"]*\")*(?![^\"]*\"))'   # ';' followed by zero or more balanced double-quotes
-    @( $pathlist -split $regex | foreach-object { normalize_path $_ } )
+    $paths = @()
+    if ($pathlist -ne '') { $paths += @( $pathlist -split $regex | foreach-object { normalize_path $_ } ) }
+    # trace "split_pathlist(): paths.count = $($paths.count)"
+    # trace "split_pathlist(): paths = $paths"
+    # force array return even if only 0 or 1 elements ## ref: https://stackoverflow.com/questions/11107428/how-can-i-force-powershell-to-return-an-array-when-a-call-only-returns-one-objec @@ http://archive.is/3azyb
+    switch($paths.count) { 0 { ,@( ) } 1 { ,@( $paths[0] ) } default { $paths } }
 }
 
 # operations
@@ -359,7 +364,7 @@ $code
 function ensure_in_path($dir, $global) {
     $dir = fullpath $dir
 
-    # trace "ensure_in_path(): dir = '$dir'"
+    # trace "ensure_in_path(): dir = '$dir'; global = $global"
 
     # ToDO: test with path non-existant (may need several `-erroraction silentlycontinue`)
     $shim_dir = normalize_path $(shimdir $global)
@@ -369,40 +374,58 @@ function ensure_in_path($dir, $global) {
     # trace "ensure_in_path(): shim_dir = '$shim_dir_parent'"
 
     # future sessions
-    $p = env 'PATH' -t $global
-    $was_present, $currpath = strip_path $p $dir
+    $paths_original = env 'PATH' -t $global
+    # trace "ensure_in_path(): env:PATH($global) = '$p'"
+    $was_present, $stripped_pathlist = strip_path $paths_original $dir
+    # trace "ensure_in_path(): (stripped) = '$stripped_pathlist'"
     if ( -not $was_present ) { write-output "adding '$dir' to $(if($global){'global'}else{'your'}) path" }
-    # trace "ensure_in_path(): currpath = '$currpath'"
-    $paths = split_pathlist $currpath
-    # trace "ensure_in_path(): [paths]`n$paths"
-    # trace "ensure_in_path(): paths.count = $($paths.count)"
-    if ($paths.count -lt 1) { $paths = @( $dir ) }
-    else {
-        $index = [System.Array]::IndexOf( $paths, @( @( $paths ) -imatch $('^'+[regex]::escape($shim_dir_parent)) )[0] )
-        if ( $index -lt 0 ) { $index = $paths.count }
-        if ( $paths[$index] -ine $shim_dir ) { $index -= 1 }    # place after $shim_dir but before any other scoop dir
-        $new_paths = $paths[0..$index] + $dir + $( if ($index -lt $paths.count) { $paths[$($index+1)..$paths.count] } )
-        $paths = $new_paths
+    if ($was_present -and ($shim_dir -eq $(normalize_path( $dir )))) {
+        $paths = $paths_original
+    } else {
+        $paths = split_pathlist $stripped_pathlist
+        # trace "ensure_in_path(): saved/paths.count = $($paths.count)"
+        # trace "ensure_in_path(): saved/paths:\n$paths"
+        if ($paths.count -lt 1) { $paths = @( $dir ) }
+        else {
+            $index = [System.Array]::IndexOf( $paths, @( @( $paths ) -imatch $('^'+[regex]::escape($shim_dir_parent)) )[0] )
+            if ( $index -lt 0 ) { $index = $paths.count }
+            if ( $paths[$index] -ine $shim_dir ) { $index -= 1 }    # place after $shim_dir but before any other scoop dir
+            $new_paths = $paths[0..$index] + $dir
+            if ($index -lt $paths.count) { $new_paths += $paths[$($index+1)..$paths.count] }
+            $paths = $new_paths
+        }
     }
-    # trace "ensure_in_path(): [paths]`n$paths"
-    # trace "ensure_in_path(): paths.count = $($paths.count)"
+    # trace "ensure_in_path(): saved/paths.count = $($paths.count)"
+    # trace "ensure_in_path(): saved/paths:\n$paths"
+    # trace "ensure_in_path(): saved/joined = $( $paths -join ';' )"
     env 'PATH' -t $global $( $paths -join ';' )
 
     # this session / current process
-    $null, $env:path = strip_path $env:path $dir
-    $paths = split_pathlist $env:path
-    # trace "ensure_in_path(): [paths]`n$paths"
-    # trace "ensure_in_path(): paths.count = $($paths.count)"
-    if ($paths.count -lt 1) { $paths = @( $dir ) }
-    else {
-        $index = [System.Array]::IndexOf( $paths, @( @( $paths ) -imatch $('^'+[regex]::escape($shim_dir_parent)) )[0] )
-        if ( $index -lt 0 ) { $index = $paths.count }
-        if ( $paths[$index] -ine $shim_dir ) { $index -= 1 }    # place after $shim_dir but before any other scoop dir
-        $new_paths = $paths[0..$index] + $dir + $( if ($index -lt $paths.count) { $paths[$($index+1)..$paths.count] } )
-        $paths = $new_paths
+    $paths_original = $env:PATH
+    # trace "ensure_in_path(): env:PATH = '$env:PATH'"
+    $null, $stripped_pathlist = strip_path $paths_original $dir
+    # trace "ensure_in_path(): (after strip) env:PATH = '$stripped_pathlist'"
+    if ($was_present -and ($shim_dir -eq $(normalize_path( $dir )))) {
+        $paths = $paths_original
+    } else {
+        $paths = split_pathlist $stripped_pathlist
+        # trace "ensure_in_path(): now/[paths]`n$paths"
+        # trace "ensure_in_path(): now/paths.count = $($paths.count)"
+        if ($paths.count -lt 1) { $paths = @( $dir ) }
+        else {
+            $index = [System.Array]::IndexOf( $paths, @( @( $paths ) -imatch $('^'+[regex]::escape($shim_dir_parent)) )[0] )
+            if ( $index -lt 0 ) { $index = $paths.count }
+            trace "index = $index"
+            if ( $paths[$index] -ine $shim_dir ) { $index -= 1 }    # place after $shim_dir but before any other scoop dir
+            trace "index = $index"
+            $new_paths = $paths[0..$index] + $dir
+            if ($index -lt $paths.count) { $new_paths += $paths[$($index+1)..$paths.count] }
+            $paths = $new_paths
+        }
     }
-    # trace "ensure_in_path(): [paths]`n$paths"
-    # trace "ensure_in_path(): paths.count = $($paths.count)"
+    # trace "ensure_in_path(): now/[paths]`n$paths"
+    # trace "ensure_in_path(): now/paths.count = $($paths.count)"
+    # trace "ensure_in_path(): now/joined = $( $paths -join ';' )"
     env 'PATH' $( $paths -join ';' )
 }
 
@@ -423,7 +446,7 @@ function remove_from_path($dir,$global) {
     }
 
     # current session
-    $was_in_path, $newpath = strip_path $env:path $dir
+    $was_in_path, $newpath = strip_path $env:PATH $dir
     if($was_in_path) { env 'PATH' $newpath }
 }
 
