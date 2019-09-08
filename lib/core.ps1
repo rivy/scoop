@@ -366,7 +366,7 @@ function ensure_in_path($dir, $global) {
     # trace "ensure_in_path(): shim_dir = '$shim_dir_parent'"
 
     # future sessions
-    $p = env 'path' -t $global
+    $p = env 'PATH' -t $global
     $was_present, $currpath = strip_path $p $dir
     if ( -not $was_present ) { write-output "adding '$dir' to $(if($global){'global'}else{'your'}) path" }
     # trace "ensure_in_path(): currpath = '$currpath'"
@@ -383,7 +383,7 @@ function ensure_in_path($dir, $global) {
     }
     # trace "ensure_in_path(): [paths]`n$paths"
     # trace "ensure_in_path(): paths.count = $($paths.count)"
-    env 'path' -t $global $( $paths -join ';' )
+    env 'PATH' -t $global $( $paths -join ';' )
 
     # this session / current process
     $null, $env:path = strip_path $env:path $dir
@@ -400,7 +400,7 @@ function ensure_in_path($dir, $global) {
     }
     # trace "ensure_in_path(): [paths]`n$paths"
     # trace "ensure_in_path(): paths.count = $($paths.count)"
-    env 'path' $( $paths -join ';' )
+    env 'PATH' $( $paths -join ';' )
 }
 
 function strip_path($orig_path, $dir) {
@@ -413,15 +413,15 @@ function remove_from_path($dir,$global) {
     $dir = fullpath $dir
 
     # future sessions
-    $was_in_path, $newpath = strip_path (env 'path' -t $global) $dir
+    $was_in_path, $newpath = strip_path (env 'PATH' -t $global) $dir
     if($was_in_path) {
         write-output "removing '$dir' from your path"
-        env 'path' -t $global $newpath
+        env 'PATH' -t $global $newpath
     }
 
     # current session
     $was_in_path, $newpath = strip_path $env:path $dir
-    if($was_in_path) { env 'path' $newpath }
+    if($was_in_path) { env 'PATH' $newpath }
 }
 
 function ensure_scoop_in_path($global) {

@@ -646,16 +646,16 @@ function rm_startmenu_shortcuts($manifest, $global) {
 
 # to undo after installers add to path so that scoop manifest can keep track of this instead
 function ensure_install_dir_not_in_path($dir, $global) {
-    $path = (env 'path' -t $global)
+    $path = (env 'PATH' -t $global)
 
     $fixed, $removed = find_dir_or_subdir $path "$dir"
     if($removed) {
         $removed | foreach-object { "installer added '$_' to path, removing"}
-        env 'path' -t $global $fixed
+        env 'PATH' -t $global $fixed
     }
 
     if(!$global) {
-        $fixed, $removed = find_dir_or_subdir (env 'path' -t $true) "$dir"
+        $fixed, $removed = find_dir_or_subdir (env 'PATH' -t $true) "$dir"
         if($removed) {
             $removed | foreach-object { warn "installer added $_ to system path: you might want to remove this manually (requires admin permission)"}
         }
