@@ -85,8 +85,9 @@ function normalize_path($path) {
     $path = $path -replace "^~", $env:USERPROFILE   # expand '~' for PowerShell paths
     if ($path) {
         ## ToDO: handle broken path pieces better (eg, "C:\xxx\C:\yyy" causes a fault)
+        ## ? ... faults are now caught; ? process the path at all or just return it as now implemented
         # trace "path = $path"
-        $path = [System.IO.Path]::GetFullPath($path)
+        $path = try { [System.IO.Path]::GetFullPath($path) } catch { $path }
         }
     $path = $path.TrimEnd( [System.IO.Path]::DirectorySeparatorChar )
     $path
