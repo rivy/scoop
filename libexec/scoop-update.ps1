@@ -8,7 +8,7 @@
 # Options:
 #   --global, -g    update a globally installed app
 #   --force, -f     force update even when there isn't a newer version
-#   --no-cache, -k  don't use the download cache
+#   --no-cache, -C  don't use the download cache
 #   --quiet, -q     hide extraneous messages
 
 . "$($MyInvocation.MyCommand.Path | Split-Path | Split-Path)\lib\core.ps1"
@@ -24,11 +24,11 @@
 $update_restart = [int]$env:SCOOP__updateRestart
 $args_initial = $args
 
-$opt, $apps, $err = getopt $args 'gfkq' 'global','force', 'no-cache', 'quiet'
+$opt, $apps, $err = getopt $args 'gfCq' 'global','force', 'no-cache', 'quiet'
 if($err) { "scoop update: $err"; exit 1 }
 $global = $opt.g -or $opt.global
 $force = $opt.f -or $opt.force
-$use_cache = !($opt.k -or $opt.'no-cache')
+$use_cache = !($opt.C -or $opt.'no-cache')
 $quiet = $opt.q -or $opt.quiet
 
 function update_scoop() {

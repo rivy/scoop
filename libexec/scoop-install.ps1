@@ -14,7 +14,8 @@
 # Options:
 #   -a, --arch <32bit|64bit>  use the specified architecture, if the app supports it
 #   -g, --global              install the app globally
-#   -k, --no-cache            don't use the download cache (note: will overwrite any cached copy)
+#   -C, --no-cache            don't use the download cache (note: will overwrite any cached copy)
+#   -k, --insecure            allow insecure downloads (SSL download errors are ignored)
 
 . "$($MyInvocation.MyCommand.Path | Split-Path | Split-Path)\lib\core.ps1"
 . $(rootrelpath "lib\manifest.ps1")
