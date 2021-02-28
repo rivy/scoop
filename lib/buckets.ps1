@@ -1,9 +1,35 @@
 $bucketsdir = "$scoopdir\buckets"
 
-function bucketdir($bucket) {
-    if(!$bucket) { $(rootrelpath "bucket"); return } # main bucket
+function Find-BucketDirectory {
+    <#
+        .DESCRIPTION
+            Return full path for bucket with given name.
+            Main bucket will be returned as default.
+        .PARAMETER Name
+            Name of bucket.
+        .PARAMETER Root
+            Root folder of bucket repository will be returned instead of 'bucket' subdirectory (if exists).
+        #>
+    param(
+        [string] $Name,
+        [switch] $Root
+    )
 
-    "$bucketsdir\$bucket"
+    # Handle info passing empty string as bucket ($install.bucket)
+    if (($null -eq $Name) -or ($Name -eq '')) { $(rootrelpath "bucket"); return }
+    $bucket = "$bucketsdir\$Name"
+
+    if ((Test-Path "$bucket\bucket") -and !$Root) {
+        $bucket = "$bucket\bucket"
+    }
+
+    "$bucket"
+}
+
+
+function bucketdir($bucket_name) {
+    # Show-DeprecatedWarning $MyInvocation 'Find-BucketDirectory'
+    Find-BucketDirectory $bucket_name
 }
 
 function known_bucket_repos {
@@ -28,7 +54,7 @@ function apps_in_bucket($bucket) {
 
 function buckets {
     $buckets = @()
-    if(test-path $bucketsdir) {
+    if (test-path $bucketsdir) {
         get-childitem $bucketsdir | foreach-object { $buckets += $_.name }
     }
     $buckets
@@ -48,9 +74,11 @@ function find_manifest($app) {
     }
 
     $buckets = @($null) + @(buckets) # null for main bucket
-    if ($null -ne $buckets) { foreach ($bucket in $buckets) {
-        $app = app $app_name $bucket $variant
-        $manifest = manifest $app
-        if($manifest) { $manifest, $bucket; return }
-    }}
+    if ($null -ne $buckets) {
+        foreach ($bucket in $buckets) {
+            $app = app $app_name $bucket $variant
+            $manifest = manifest $app
+            if ($manifest) { $manifest, $bucket; return }
+        }
+    }
 }
