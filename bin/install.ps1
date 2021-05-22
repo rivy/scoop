@@ -92,7 +92,7 @@ $_url = $($repo_base_raw+'/'+$_name)
 write-output "[${_name}] from ${_url} ..."
 . $( [ScriptBlock]::Create((new-object net.webclient).downloadstring($_url)) )
 ## ToDO: ? consolidate required functions for initial installation into `core.ps1`
-# get decompress functions ## decompress.ps1 is required `7z` detection and use functions
+# get decompress functions ## decompress.ps1 is required for 7zip-related functions
 $_name = 'lib/decompress.ps1'
 $_url = $($repo_base_raw+'/'+$_name)
 write-output "[${_name}] from ${_url} ..."

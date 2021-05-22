@@ -82,7 +82,6 @@ function runtime_deps($manifest) {
 function install_deps($manifest, $arch) {
     $deps = @()
 
-    if(requires_7zip $manifest $arch) { $deps += (app "7zip") }
     if(requires_lessmsi $manifest $arch) { $deps += (app "lessmsi") }
     if($manifest.innosetup) { $deps += (app "innounp") }
 
