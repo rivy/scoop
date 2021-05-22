@@ -80,16 +80,35 @@ function rootrelpath($path) { join-path $projectrootpath $path } # relative to p
 function is_local($path) {
     ($path -notmatch '^https?://') -and (test-path $path)
 }
-function normalize_path($path) {
-    # $path does NOT need to exist
-    $path = $path -replace "^~", $env:USERPROFILE   # expand '~' for PowerShell paths
+function normalize_path($path, $relativeToPath=$PWD) {
+    # * $path does NOT need to exist
+    # convert all slashes to platform directory separator character
+    $path = $path -replace '(/|\\)', [System.IO.Path]::DirectorySeparatorChar
+    # strip any UNC prefixes
+    $path = $path -replace '^\\\\[?]\\UNC\\', '\\'
+    $path = $path -replace '^\\\\[?]\\',''
+    # normalize $relativeToPath
+    if ($PWD -ne $relativeToPath) { $relativeToPath = normalize_path( $relativeToPath ) }
+    # tilde-expand
+    $path = $path -replace '^~(\\|$)', "$env:USERPROFILE\"   # expand '~' for PowerShell paths
+    # ref: [PoSH ~ Convert relative path to absolute path](https://satob.hatenablog.com/entry/2017/03/16/010222) @@ <https://archive.is/XK2uq>
     if ($path) {
         ## ToDO: handle broken path pieces better (eg, "C:\xxx\C:\yyy" causes a fault)
         ## ? ... faults are now caught; ? process the path at all or just return it as now implemented
         # trace "path = $path"
-        $path = try { [System.IO.Path]::GetFullPath($path) } catch { $path }
+        $path = try { [System.IO.Path]::GetFullPath([System.IO.Path]::Combine($relativeToPath, $path)) } catch { $path }
         }
     $path = $path.TrimEnd( [System.IO.Path]::DirectorySeparatorChar )
+    $path = $path -replace '^([A-Za-z]:)$',$($1+[System.IO.Path]::DirectorySeparatorChar)
+    # ref: [DOS device paths](https://docs.microsoft.com/en-us/dotnet/standard/io/file-path-formats#dos-device-paths)
+    # note: MAX_PATH may be 260, but individual path segments may only be up to 255 characters
+    if ($path.length -gt 255) {
+        # DOS device paths are only supported for PoSH v5.1+
+        if ($PSVersionTable.PSVersion -ge [System.Version]::Parse("5.1")) {
+            $path = $path -replace '^\\\\','\UNC\'
+            $path = $path -replace '^\\','\\?\'
+        }
+    }
     $path
 }
 function split_pathlist($pathlist) {
