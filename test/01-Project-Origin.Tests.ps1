@@ -7,12 +7,13 @@ $repo_dir = (Get-Item $MyInvocation.MyCommand.Path).directory.parent.FullName
 describe 'Project origin' {
 
     it 'origin defaults are set (from "lib\core.ps1")' {
-        @($default)             | should not BeNullOrEmpty
-        $default['repo.domain'] | should not BeNullOrEmpty
-        $default['repo.owner']  | should not BeNullOrEmpty
-        $default['repo.name']   | should not BeNullOrEmpty
-        $default['repo.branch'] | should not BeNullOrEmpty
-        $default['repo']        | should not BeNullOrEmpty
+        @($default)                     | should not BeNullOrEmpty
+        $default['repo.owner']          | should not BeNullOrEmpty
+        $default['repo.domain']         | should not BeNullOrEmpty
+        $default['repo.name']           | should not BeNullOrEmpty
+        $default['repo.branch']         | should not BeNullOrEmpty
+        $default['repo']                | should not BeNullOrEmpty
+        $default['repo.download.base']  | should not BeNullOrEmpty
     }
 
     it $("origin default branch ('{0}') is either 'master' or matches as a trial release branch" -f $default['repo.branch']) {
@@ -28,26 +29,39 @@ describe 'Project origin' {
         $text = $text['README']
         # ex (alt#1): ... 'https://raw.github.com/rivy/scoop/master/bin/install.ps1' |%{&$([ScriptBlock] ...
         $regex = "'" + 'https?://.*?' +
-            '(' + [regex]::escape("$($default['repo.domain'])") + '|' + [regex]::escape("$($default['cdn.domain'])") + ')' +
+            '(' + [regex]::escape("$($default['repo.domain'])") + '|' + [regex]::escape("$($default['repo.download.base'])") + ')' +
             [regex]::escape("/$($default['repo.owner'])/$($default['repo.name'])") +
             '.*?' +
             [regex]::escape("$($default['repo.branch'])/bin/install.ps1") +
-            "'" + '\s*`|\s*\%\s*\{\s*\&\s*\$\s*\(\s*\[\s*(?i:ScriptBlock)\s*\]'
+            # (optional) query string
+            "(?:[?][^'#]+)?" +
+            # (optional) fragment string
+            "(?:[#][^']+)?" +
+            "'" + '\s*?|\s*\%\s*\{\s*\&\s*\$\s*\(\s*\[\s*(?i:ScriptBlock)\s*?\]'
         $m = [regex]::matches($text, $regex)
         if (-not $m.success) {
             # ex (alt#2): iex (new-object net.webclient).downloadstring( 'https://raw.github.com/rivy/scoop/master/bin/install.ps1' )
             $regex = 'iex\s+\(\s*new-object\s+net\.webclient\)\.downloadstring\s*\(\s*' +
                 "'" + 'https?://.*?' +
-                '(' + [regex]::escape("$($default['repo.domain'])") + '|' + [regex]::escape("$($default['cdn.domain'])") + ')' +
+                '(' + [regex]::escape("$($default['repo.domain'])") + '|' + [regex]::escape("$($default['repo.download.base'])") + ')' +
                 [regex]::escape("/$($default['repo.owner'])/$($default['repo.name'])") +
                 '[/@]' +
                 [regex]::escape("$($default['repo.branch'])/bin/install.ps1") +
-                "'" + '\s*\)'
+                # (optional) query string
+                "(?:[?][^'#]+)?" +
+                # (optional) fragment string
+                "(?:[#][^']+)?" +
+                "'" + '\s*?\)'
             $m = [regex]::matches($text, $regex)
         }
         if (-not ($m.count -ge $expected_match_count))
         {
             throw "minimum number of matches ($expected_match_count) not found"
+        }
+        $unique_matches = $($m.value | select-object -unique)
+        if ($unique_matches.count -ne 1)
+        {
+            throw "installations URLs are not all equal (matches[$($unique_matches.count)] = [`n$($m | format-table | out-string)])"
         }
     }
 
