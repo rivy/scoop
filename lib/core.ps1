@@ -381,7 +381,7 @@ function ensure_in_path($dir, $global) {
     # trace "ensure_in_path(): shim_dir = '$shim_dir'"
     # trace "ensure_in_path(): shim_dir = '$shim_dir_parent'"
 
-    # future sessions
+    # future shell sessions
     $paths_original = env 'PATH' -t $global
     # trace "ensure_in_path(): env:PATH($global) = '$p'"
     $was_present, $stripped_pathlist = strip_path $paths_original $dir
@@ -408,7 +408,7 @@ function ensure_in_path($dir, $global) {
     # trace "ensure_in_path(): saved/joined = $( $paths -join ';' )"
     env 'PATH' -t $global $( $paths -join ';' )
 
-    # this session / current process
+    # current shell session / process
     $paths_original = $env:PATH
     # trace "ensure_in_path(): env:PATH = '$env:PATH'"
     $null, $stripped_pathlist = strip_path $paths_original $dir
@@ -460,7 +460,6 @@ function remove_from_path($dir,$global) {
 
 function ensure_scoop_in_path($global) {
     $abs_shimdir = ensure (shimdir $global)
-    # be aggressive (b-e-aggressive) and install scoop first in the path
     ensure_in_path $abs_shimdir $global
 }
 
