@@ -1,6 +1,8 @@
 {
-    "extras": "https://github.com/lukesampson/scoop-extras.git",
     "nirsoft": "https://github.com/kodybrown/scoop-nirsoft",
-    "versions": "https://github.com/scoopinstaller/scoop-versions",
-    "nightlies": "https://github.com/scoopinstaller/scoop-nightlies"
+    "rivy": "https://github.com/rivy/scoop-bucket",
+    "scoop-extras": "https://github.com/lukesampson/scoop-extras.git",
+    "scoop-main": "https://github.com/rivy/scoop.bucket.scoop-main",
+    "scoop-nightlies": "https://github.com/scoopinstaller/scoop-nightlies",
+    "scoop-versions": "https://github.com/scoopinstaller/scoop-versions"
 }
