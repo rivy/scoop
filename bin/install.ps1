@@ -125,7 +125,7 @@ if (-not ($ep -imatch '^(bypass|unrestricted)$')) {
     set-executionpolicy unrestricted -scope currentuser
 }
 
-# download `curl`
+# download `curl` (bootstraps further downloads)
 $bin_dir = ensure "$dir\_bin"
 $dl_name = "vendor/curl/curl.exe"
 $url = "${repo_base_raw}/${dl_name}"
@@ -138,7 +138,7 @@ $file = "${bin_dir}\ca-bundle.crt"
 write-output "[${dl_name}] from `"${url}`" ..."
 dl $url $file
 
-# download scoop zip
+# download `scoop` zip
 $zipurl = $repo_branch_zip
 $zipfile = "$dir\scoop.zip"
 $allow_insecure = $true
