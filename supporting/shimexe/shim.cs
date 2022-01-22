@@ -86,8 +86,10 @@ namespace shim
             var pi = new PROCESS_INFORMATION();
 
             // create command line
+            var cmd_line = Environment.CommandLine;
             var cmd_args = add_args ?? "";
-            var pass_args = GetArgs(Environment.CommandLine);
+            var word_list = GetWords(cmd_line);
+            var pass_args = word_list.Count > 1 ? cmd_line.Substring(word_list[1].Index) : null;
             if (!string.IsNullOrEmpty(pass_args))
             {
                 if (!string.IsNullOrEmpty(cmd_args)) cmd_args += " ";
@@ -120,24 +122,14 @@ namespace shim
             return (int)exit_code;
         }
 
-        // now uses GetArgs instead
-        static string Serialize(string[] args)
+        // match words (tokens, separated by whitespace, which may have double-quoted internal whitespace)
+        static MatchCollection GetWords(string cmdLine)
         {
-            return string.Join(" ", args.Select(a => a.Contains(' ') ? '"' + a + '"' : a));
-        }
-
-        // strips the program name from the command line, returns just the arguments
-        static string GetArgs(string cmdLine)
-        {
-            if (cmdLine.StartsWith("\""))
-            {
-                var endQuote = cmdLine.IndexOf("\" ", 1);
-                if (endQuote < 0) return "";
-                return cmdLine.Substring(endQuote + 1);
-            }
-            var space = cmdLine.IndexOf(' ');
-            if (space < 0 || space == cmdLine.Length - 1) return "";
-            return cmdLine.Substring(space + 1);
+            const char DQ = '"';
+            string DQStringReS = DQ + "[^" + DQ + "]*(" + DQ + "|$)"; // matches double-quoted string (unbalanced at end-of-line is allowed)
+            string wordReS = "([^" + DQ + "\\s]+|" + DQStringReS + ")+";
+            Regex wordRx = new Regex(wordReS, RegexOptions.Multiline | RegexOptions.Singleline);
+            return wordRx.Matches(cmdLine);
         }
 
         static string Get(Dictionary<string, string> dic, string key)
