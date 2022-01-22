@@ -8,10 +8,12 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Runtime.InteropServices;
 
-namespace shim {
+namespace shim
+{
 
-    class Program {
-        [DllImport("kernel32.dll", SetLastError=true)]
+    class Program
+    {
+        [DllImport("kernel32.dll", SetLastError = true)]
         static extern bool CreateProcess(string lpApplicationName,
             string lpCommandLine, IntPtr lpProcessAttributes,
             IntPtr lpThreadAttributes, bool bInheritHandles,
@@ -20,7 +22,8 @@ namespace shim {
             out PROCESS_INFORMATION lpProcessInformation);
 
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-        struct STARTUPINFO {
+        struct STARTUPINFO
+        {
             public Int32 cb;
             public string lpReserved;
             public string lpDesktop;
@@ -42,18 +45,19 @@ namespace shim {
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        internal struct PROCESS_INFORMATION {
+        internal struct PROCESS_INFORMATION
+        {
             public IntPtr hProcess;
             public IntPtr hThread;
             public int dwProcessId;
             public int dwThreadId;
         }
 
-        [DllImport("kernel32.dll", SetLastError=true)]
+        [DllImport("kernel32.dll", SetLastError = true)]
         static extern UInt32 WaitForSingleObject(IntPtr hHandle, UInt32 dwMilliseconds);
         const UInt32 INFINITE = 0xFFFFFFFF;
 
-        [DllImport("kernel32.dll", SetLastError=true)]
+        [DllImport("kernel32.dll", SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         static extern bool CloseHandle(IntPtr hObject);
 
@@ -61,13 +65,15 @@ namespace shim {
         [return: MarshalAs(UnmanagedType.Bool)]
         static extern bool GetExitCodeProcess(IntPtr hProcess, out uint lpExitCode);
 
-        static int Main(string[] args) {
+        static int Main(string[] args)
+        {
             var exe = Assembly.GetExecutingAssembly().Location;
             var dir = Path.GetDirectoryName(exe);
             var name = Path.GetFileNameWithoutExtension(exe);
 
             var configPath = Path.Combine(dir, name + ".shim");
-            if(!File.Exists(configPath)) {
+            if (!File.Exists(configPath))
+            {
                 Console.Error.WriteLine("Couldn't find " + Path.GetFileName(configPath) + " in " + dir);
                 return 1;
             }
@@ -82,20 +88,22 @@ namespace shim {
             // create command line
             var cmd_args = add_args ?? "";
             var pass_args = GetArgs(Environment.CommandLine);
-            if(!string.IsNullOrEmpty(pass_args)) {
-                if(!string.IsNullOrEmpty(cmd_args)) cmd_args += " ";
+            if (!string.IsNullOrEmpty(pass_args))
+            {
+                if (!string.IsNullOrEmpty(cmd_args)) cmd_args += " ";
                 cmd_args += pass_args;
             }
-            if(!string.IsNullOrEmpty(cmd_args)) cmd_args = " " + cmd_args;
+            if (!string.IsNullOrEmpty(cmd_args)) cmd_args = " " + cmd_args;
             var cmd = "\"" + path + "\"" + cmd_args;
 
-            if(!CreateProcess(null, cmd, IntPtr.Zero, IntPtr.Zero,
+            if (!CreateProcess(null, cmd, IntPtr.Zero, IntPtr.Zero,
                 bInheritHandles: true,
                 dwCreationFlags: 0,
                 lpEnvironment: IntPtr.Zero, // inherit parent
                 lpCurrentDirectory: null, // inherit parent
                 lpStartupInfo: ref si,
-                lpProcessInformation: out pi)) {
+                lpProcessInformation: out pi))
+            {
 
                 return Marshal.GetLastWin32Error();
             }
@@ -113,33 +121,40 @@ namespace shim {
         }
 
         // now uses GetArgs instead
-        static string Serialize(string[] args) {
+        static string Serialize(string[] args)
+        {
             return string.Join(" ", args.Select(a => a.Contains(' ') ? '"' + a + '"' : a));
         }
 
         // strips the program name from the command line, returns just the arguments
-        static string GetArgs(string cmdLine) {
-            if(cmdLine.StartsWith("\"")) {
+        static string GetArgs(string cmdLine)
+        {
+            if (cmdLine.StartsWith("\""))
+            {
                 var endQuote = cmdLine.IndexOf("\" ", 1);
-                if(endQuote < 0) return "";
+                if (endQuote < 0) return "";
                 return cmdLine.Substring(endQuote + 1);
             }
             var space = cmdLine.IndexOf(' ');
-            if(space < 0 || space == cmdLine.Length - 1) return "";
+            if (space < 0 || space == cmdLine.Length - 1) return "";
             return cmdLine.Substring(space + 1);
         }
 
-        static string Get(Dictionary<string, string> dic, string key) {
+        static string Get(Dictionary<string, string> dic, string key)
+        {
             string value = null;
             dic.TryGetValue(key, out value);
             return value;
         }
 
-        static Dictionary<string, string> Config(string path) {
+        static Dictionary<string, string> Config(string path)
+        {
             var config = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-            foreach(var line in File.ReadAllLines(path)) {
+            foreach (var line in File.ReadAllLines(path))
+            {
                 var m = Regex.Match(line, @"([^=]+)=(.*)");
-                if(m.Success) {
+                if (m.Success)
+                {
                     config[m.Groups[1].Value.Trim()] = m.Groups[2].Value.Trim();
                 }
             }
