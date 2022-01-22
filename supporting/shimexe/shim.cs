@@ -85,10 +85,11 @@ namespace shim
             var si = new STARTUPINFO();
             var pi = new PROCESS_INFORMATION();
 
-            // create command line
+            // create command line for shim target
             var cmd_line = Environment.CommandLine;
             var cmd_args = add_args ?? "";
             var word_list = GetWords(cmd_line);
+            var argv0 = word_list.Count > 0 ? word_list[0].ToString() : null;
             var pass_args = word_list.Count > 1 ? cmd_line.Substring(word_list[1].Index) : null;
             if (!string.IsNullOrEmpty(pass_args))
             {
@@ -97,6 +98,14 @@ namespace shim
             }
             if (!string.IsNullOrEmpty(cmd_args)) cmd_args = " " + cmd_args;
             var cmd = "\"" + path + "\"" + cmd_args;
+
+            // as a shim/pass-through, leave current SHIM info, if present, o/w place shim info in the environment
+            if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable("SHIM_TARGET")))
+            {
+                Environment.SetEnvironmentVariable("SHIM_TARGET", path);
+                if (!string.IsNullOrEmpty(argv0)) { Environment.SetEnvironmentVariable("SHIM_ARGV0", argv0.Trim()); }
+                if (!string.IsNullOrEmpty(pass_args)) { Environment.SetEnvironmentVariable("SHIM_ARGS", pass_args.Trim()); }
+            }
 
             if (!CreateProcess(null, cmd, IntPtr.Zero, IntPtr.Zero,
                 bInheritHandles: true,
