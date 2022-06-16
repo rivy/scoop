@@ -65,6 +65,35 @@ namespace shim
         [return: MarshalAs(UnmanagedType.Bool)]
         static extern bool GetExitCodeProcess(IntPtr hProcess, out uint lpExitCode);
 
+        [DllImport("kernel32.dll", SetLastError = true)]
+        private static extern bool SetConsoleCtrlHandler(ConsoleCtrlHandlerFn handler, bool add);
+
+        enum CtrlSignalType
+        {
+            CTRL_C_EVENT = 0,
+            CTRL_BREAK_EVENT = 1,
+            CTRL_CLOSE_EVENT = 2,
+            CTRL_LOGOFF_EVENT = 5,
+            CTRL_SHUTDOWN_EVENT = 6
+        }
+
+        private delegate bool ConsoleCtrlHandlerFn(CtrlSignalType signal);
+
+        private static bool ConsoleCtrlHandler(CtrlSignalType signal)
+        {
+            switch (signal)
+            {
+                case CtrlSignalType.CTRL_C_EVENT:
+                case CtrlSignalType.CTRL_BREAK_EVENT:
+                case CtrlSignalType.CTRL_CLOSE_EVENT:
+                case CtrlSignalType.CTRL_LOGOFF_EVENT:
+                case CtrlSignalType.CTRL_SHUTDOWN_EVENT:
+                    return true; // signal was handled
+                default:
+                    return false; // signal was *not* handled
+            }
+        }
+
         static int Main(string[] args)
         {
             var exe = Assembly.GetExecutingAssembly().Location;
@@ -107,6 +136,17 @@ namespace shim
                 if (!string.IsNullOrEmpty(pass_args)) { Environment.SetEnvironmentVariable("SHIM_ARGS", pass_args.Trim()); }
             }
 
+            // setup "ignore" response for Ctrl-C and other signals (to allow unalloyed handling by shim target)
+            // ref: [Console Control Handlers](https://docs.microsoft.com/en-us/windows/console/console-control-handlers)
+            // ref: [CTRL-C and CTRL-BREAK Signals](https://docs.microsoft.com/en-us/windows/console/ctrl-c-and-ctrl-break-signals)
+            // ref: [Capture Console Exit](https://stackoverflow.com/questions/474679/capture-console-exit-c-sharp)
+            if (!SetConsoleCtrlHandler(ConsoleCtrlHandler, /* add handler => true */ true))
+            {
+                Console.Error.WriteLine("Unable to set console control handler; CTRL-C, CTRL-BREAK, ... signal behavior may be unexpected.\n");
+            }
+
+            uint exit_code = 0;
+
             if (!CreateProcess(null, cmd, IntPtr.Zero, IntPtr.Zero,
                 bInheritHandles: true,
                 dwCreationFlags: 0,
@@ -115,18 +155,17 @@ namespace shim
                 lpStartupInfo: ref si,
                 lpProcessInformation: out pi))
             {
+                exit_code = (uint)Marshal.GetLastWin32Error();
+            } else {
+                WaitForSingleObject(pi.hProcess, INFINITE);
+                GetExitCodeProcess(pi.hProcess, out exit_code);
 
-                return Marshal.GetLastWin32Error();
+                // Close process and thread handles.
+                CloseHandle(pi.hProcess);
+                CloseHandle(pi.hThread);
             }
 
-            WaitForSingleObject(pi.hProcess, INFINITE);
-
-            uint exit_code = 0;
-            GetExitCodeProcess(pi.hProcess, out exit_code);
-
-            // Close process and thread handles.
-            CloseHandle(pi.hProcess);
-            CloseHandle(pi.hThread);
+            SetConsoleCtrlHandler(ConsoleCtrlHandler, /* remove handler => false */ false);
 
             return (int)exit_code;
         }
