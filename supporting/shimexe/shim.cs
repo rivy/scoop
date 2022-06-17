@@ -1,3 +1,5 @@
+// spell-checker:ignore (types) STARTUPINFO Unmanaged
+
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
