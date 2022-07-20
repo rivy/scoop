@@ -425,7 +425,7 @@ function run_installer($fname, $manifest, $architecture, $dir) {
     $installer_script = $( $installer_script | where-object { $null -ne $_ } )
     if ( $installer.script ) {
         write-output "running installer script..."
-        $installer_script |  foreach-object {
+        $installer_script -join "`n" |  foreach-object {
             & $( [ScriptBlock]::Create($_) ) ## aka: invoke-expression $_
         }
         return
@@ -516,7 +516,7 @@ function run_uninstaller($manifest, $architecture, $dir) {
     $uninstaller_script = $( $uninstaller_script | where-object { $null -ne $_ } )
     if ( $uninstaller.script ) {
         write-output "running uninstaller script..."
-        $uninstaller_script |  foreach-object {
+        $uninstaller_script -join "`n" |  foreach-object {
             & $( [ScriptBlock]::Create($_) ) ## aka: invoke-expression $_
         }
         return
@@ -714,7 +714,7 @@ function pre_install($manifest, $architecture) {
     $pre_install_script = $( $pre_install_script | where-object { $null -ne $_ } )
     if ( $pre_install_script.length -gt 0 ) {
         write-output "running pre-install script..."
-        $pre_install_script |  foreach-object {
+        $pre_install_script -join "`n" |  foreach-object {
             & $( [ScriptBlock]::Create($_) ) ## aka: invoke-expression $_
         }
     }
@@ -725,7 +725,7 @@ function post_install($manifest, $architecture) {
     $post_install_script = $( $post_install_script | where-object { $null -ne $_ } )
     if ( $post_install_script.length -gt 0 ) {
         write-output "running post-install script..."
-        $post_install_script |  foreach-object {
+        $post_install_script -join "`n" |  foreach-object {
             & $( [ScriptBlock]::Create($_) ) ## aka: invoke-expression $_
         }
     }
