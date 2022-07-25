@@ -124,6 +124,7 @@ if ($null -ne $args) { $args | foreach-object {
     # ""
 }}
 
+# trace "github_ratelimit_reached=$github_ratelimit_reached"
 if (!$local_results -and !(github_ratelimit_reached)) {
     search_remotes $query
 }
