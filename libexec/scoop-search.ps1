@@ -81,7 +81,8 @@ function search_remote($bucket, $query) {
 function search_remotes($query) {
     # trace "search_remotes(): query=$query"
     $buckets = known_bucket_repos
-    $names = $buckets | get-member -m noteproperty | select-object -exp name
+    # $names = $buckets | get-member -m noteproperty | select-object -exp name
+    $names = $buckets.keys
     # trace "search_remotes(): names=$names"
 
     $results = $names | where-object { !(test-path $(bucketdir $_)) } | foreach-object {
