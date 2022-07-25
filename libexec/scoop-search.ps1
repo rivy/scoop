@@ -80,13 +80,20 @@ function search_remote($bucket, $query) {
 
 function search_remotes($query) {
     # trace "search_remotes(): query=$query"
+    $query_bucket = ''
+    $query_app = $query
+    if ($query -match '^(.+)/(.+)$') {
+        $query_bucket = $matches[1]
+        $query_app = $matches[2]
+    }
+    # trace "search_remotes(): query_bucket=$query_bucket ; query_app=$query_app"
     $buckets = known_bucket_repos
     # $names = $buckets | get-member -m noteproperty | select-object -exp name
     $names = $buckets.keys
     # trace "search_remotes(): names=$names"
 
-    $results = $names | where-object { !(test-path $(bucketdir $_)) } | foreach-object {
-        @{"bucket" = $_; "results" = (search_remote $_ $query)}
+    $results = $names | where-object { !(test-path $(bucketdir $_)) -and (($query_bucket.length -eq 0) -or ($_ -eq $query_bucket)) } | foreach-object {
+        @{"bucket" = $_; "results" = (search_remote $_ $query_app) }
     } | where-object { $_.results }
 
     if ($results.count -gt 0) {
