@@ -67,7 +67,7 @@ function find_manifest($app) {
     # trace "find_manifest(): app = $app"
     # trace "find_manifest(): app_name, bucket, variant = $app_name, $bucket, $variant"
     if ($bucket) {
-        # trace "find_manifest(): bucket = $bucket"
+        trace "find_manifest(): bucket = $bucket"
         $manifest = manifest $app
         if ($manifest) { return $manifest, $bucket }
         return $null

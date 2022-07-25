@@ -25,7 +25,7 @@ function bin_match($manifest, $query) {
 }
 
 function search_bucket($bucket, $query) {
-    # write-host "TRACE: search_bucket(): bucket, query = '$bucket', '$query'"
+    # trace "search_bucket(): bucket, query = '$bucket', '$query'"
     $results = apps_in_bucket $bucket | foreach-object { @{ app = $_ ; name = app_name $_ } }
 
     if($query) {
@@ -60,13 +60,16 @@ function github_ratelimit_reached {
 }
 
 function search_remote($bucket, $query) {
+    # trace "search_remote(): bucket, query = $bucket, $query"
     $repo = known_bucket_repo $bucket
+    # trace "search_remote(): repo = $repo"
 
     $uri = [system.uri]($repo)
     if ($uri.absolutepath -match '/([a-zA-Z0-9]*)/([a-zA-Z0-9-]*)(.git|/)?') {
         $user = $matches[1]
         $repo_name = $matches[2]
         $api_link = "https://api.github.com/repos/$user/$repo_name/git/trees/HEAD?recursive=1"
+        # trace "search_remote(): user, repo_name, api_link = $user, $repo_name, $api_link"
         $result = download_json $api_link | select-object -exp tree | where-object {
             $_.path -match "(($query[a-zA-Z0-9-]*).json)"
         } | foreach-object { $matches[2] }
@@ -76,8 +79,10 @@ function search_remote($bucket, $query) {
 }
 
 function search_remotes($query) {
+    # trace "search_remotes(): query=$query"
     $buckets = known_bucket_repos
     $names = $buckets | get-member -m noteproperty | select-object -exp name
+    # trace "search_remotes(): names=$names"
 
     $results = $names | where-object { !(test-path $(bucketdir $_)) } | foreach-object {
         @{"bucket" = $_; "results" = (search_remote $_ $query)}
@@ -98,7 +103,7 @@ function search_remotes($query) {
 
 if ($args.count -eq 0) { $args = @( $null ) }
 if ($null -ne $args) { $args | foreach-object {
-    # write-host "TRACE: search: _ = '$_'"
+    # trace "search: _ = '$_'"
     $query = $_
     @($null) + @(buckets) | foreach-object { # $null is main bucket
         $res = search_bucket $_ $query

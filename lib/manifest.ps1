@@ -14,7 +14,7 @@ function parse_json($path) {
 }
 
 function url_manifest($url) {
-    # write-host "url_manifest(): url = $url"
+    # trace "url_manifest(): url = $url"
     $str = $null
     try {
         $str = (new-object net.webclient).downloadstring($url)
@@ -28,6 +28,7 @@ function url_manifest($url) {
 }
 
 function manifest($app, $url) {
+    # trace "manifest(): app, url = $app, $url"
     if($url) { url_manifest $url; return }
     parse_json (manifest_path $app)
 }
