@@ -121,7 +121,7 @@ if ($null -ne $args) { $args | foreach-object {
             # ""
         }
     }
-    ""
+    # ""
 }}
 
 if (!$local_results -and !(github_ratelimit_reached)) {
