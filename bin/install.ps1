@@ -1,12 +1,12 @@
 #requires -version 2
 
 param(
-    [parameter(mandatory=$false)][string] $origin = $null,
+    [parameter(mandatory = $false)][string] $origin = $null,
     ## NOTE: '_args' is used instead of 'args' to avoid errors due to optimization if/when executed with iex(...)
-    [parameter(ValueFromRemainingArguments=$true)][array] $_args = @()
-    )
+    [parameter(ValueFromRemainingArguments = $true)][array] $_args = @()
+)
 
-$erroractionpreference='stop' # quit if anything goes wrong
+$erroractionpreference = 'stop' # quit if anything goes wrong
 
 # remote installation instructions (multiple alternatives)
 # 1 .. `iex (new-object net.webclient).downloadstring( 'REPO_URL/bin/install.ps1' )`
@@ -34,11 +34,10 @@ write-host "p=$p"
 write-host "origin=`"$origin`""
 if ($origin) {
     if ( $($origin -imatch '^https?://[^/]*(?<domain>bitbucket.org)/(?<owner>[^/]+)/(?<name>[^/]+)/raw/(?<branch>[^/\n]+)') `
-        -or $($origin -imatch '^https?://[^/]*(?<domain>github.com)/(?<owner>[^/]+)/(?<name>[^/]+)/(?<branch>[^/\n]+)') `
-        -or $($origin -imatch '^https?://[^/]*(?<domain>cdn.jsdelivr.net/gh)/(?<owner>[^/]+)/(?<name>[^/]+)@(?<branch>[^/\n]+)') `
-        -or $($origin -imatch '^https?://[^/]*(?<domain>cdn.statically.io/gh)/(?<owner>[^/]+)/(?<name>[^/]+)/(?<branch>[^/\n]+)')
-        )
-    {
+            -or $($origin -imatch '^https?://[^/]*(?<domain>github.com)/(?<owner>[^/]+)/(?<name>[^/]+)/(?<branch>[^/\n]+)') `
+            -or $($origin -imatch '^https?://[^/]*(?<domain>cdn.jsdelivr.net/gh)/(?<owner>[^/]+)/(?<name>[^/]+)@(?<branch>[^/\n]+)') `
+            -or $($origin -imatch '^https?://[^/]*(?<domain>cdn.statically.io/gh)/(?<owner>[^/]+)/(?<name>[^/]+)/(?<branch>[^/\n]+)')
+    ) {
         $repo_download_base = $matches.domain
         $repo_owner = $matches.owner
         $repo_name = $matches.name
@@ -72,7 +71,8 @@ switch -wildcard ($repo_download_base) {
         $repo_branch_zip = "https://github.com/$repo_owner/$repo_name/archive/$repo_branch.zip"
         break;
     }
-    default { # "cdn.statically.io/gh"
+    default {
+        # "cdn.statically.io/gh"
         # [statically.io]
         # (raw/CDN URL format) https://cdn.statically.io/gh/OWNER/NAME/BRANCH ...
         $repo_base_raw = "https://$repo_download_base/$repo_owner/$repo_name/$repo_branch"
@@ -88,23 +88,23 @@ write-host "installing from " -nonewline; write-host "${repo_download_base}:${re
 # get core functions
 write-output 'initializing ...'
 $_name = 'lib/core.ps1'
-$_url = $($repo_base_raw+'/'+$_name)
+$_url = $($repo_base_raw + '/' + $_name)
 write-output "[${_name}] from ${_url} ..."
 . $( [ScriptBlock]::Create((new-object net.webclient).downloadstring($_url)) )
 ## ToDO: ? consolidate required functions for initial installation into `core.ps1`
 # get decompress functions ## decompress.ps1 is required for 7zip-related functions
 $_name = 'lib/decompress.ps1'
-$_url = $($repo_base_raw+'/'+$_name)
+$_url = $($repo_base_raw + '/' + $_name)
 write-output "[${_name}] from ${_url} ..."
 . $( [ScriptBlock]::Create((new-object net.webclient).downloadstring($_url)) )
 # get install functions ## install.ps1 is required for `curl` downloads
 $_name = 'lib/install.ps1'
-$_url = $($repo_base_raw+'/'+$_name)
+$_url = $($repo_base_raw + '/' + $_name)
 write-output "[${_name}] from ${_url} ..."
 . $( [ScriptBlock]::Create((new-object net.webclient).downloadstring($_url)) )
 # get version functions ## `installed` from core.ps1 requires versions.ps1
 $_name = 'lib/versions.ps1'
-$_url = $($repo_base_raw+'/'+$_name)
+$_url = $($repo_base_raw + '/' + $_name)
 write-output "[${_name}] from ${_url} ..."
 . $( [ScriptBlock]::Create((new-object net.webclient).downloadstring($_url)) )
 

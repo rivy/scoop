@@ -39,6 +39,7 @@ What does `scoop` do?
 -------------------
 
 `scoop` installs programs from the command line with a minimal amount of friction. It tries to eliminate things like:
+
 * Permission popup windows
 * GUI wizard-style installers
 * Path pollution from installing lots of programs
