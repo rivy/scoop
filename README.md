@@ -26,8 +26,8 @@ To install, paste either of the following set of command strings at the respecti
 
 ##### CMD Shell &middot; `C:\>`
 
-    set PATH=%PATH%;%LOCALAPPDATA%\scoop\shims
     powershell -command "$url='https://cdn.statically.io/gh/rivy/scoop/tr-wip/bin/install.ps1?env=dev'; icm -script $([scriptblock]::create($(new-object net.webclient).downloadstring($url))) -arg $url"
+    set PATH=%PATH%;%LOCALAPPDATA%\scoop\shims
 
 ##### PowerShell &middot; `PS C:\>`
 
