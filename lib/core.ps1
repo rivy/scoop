@@ -383,10 +383,10 @@ function ensure_in_path($dir, $global) {
 
     # future shell sessions
     $paths_original = env 'PATH' -t $global
-    # trace "ensure_in_path(): env:PATH($global) = '$p'"
+    # trace "ensure_in_path(): env:PATH($global) = '$paths_original'"
     $was_present, $stripped_pathlist = strip_path $paths_original $dir
-    # trace "ensure_in_path(): (stripped) = '$stripped_pathlist'"
-    if ( -not $was_present ) { write-output "adding '$dir' to $(if($global){'global'}else{'your'}) path" }
+    # trace "ensure_in_path(): (was_present, stripped) = ($was_present, '$stripped_pathlist')"
+    if ( -not $was_present ) { write-output "adding '$dir' to $(if($global){'global'}else{'your (user-level)'}) path" }
     if ($was_present -and ($shim_dir -eq $(normalize_path( $dir )))) {
         $paths = $paths_original
     } else {
@@ -407,6 +407,8 @@ function ensure_in_path($dir, $global) {
     # trace "ensure_in_path(): saved/paths:\n$paths"
     # trace "ensure_in_path(): saved/joined = $( $paths -join ';' )"
     env 'PATH' -t $global $( $paths -join ';' )
+    # $p = env 'PATH' -t $global
+    # trace "ensure_in_path(): *updated* env:PATH($global) = '$p'"
 
     # current shell session / process
     $paths_original = $env:PATH
@@ -423,9 +425,9 @@ function ensure_in_path($dir, $global) {
         else {
             $index = [System.Array]::IndexOf( $paths, @( @( $paths ) -imatch $('^'+[regex]::escape($shim_dir_parent)) )[0] )
             if ( $index -lt 0 ) { $index = $paths.count }
-            trace "index = $index"
+            # trace "index = $index"
             if ( $paths[$index] -ine $shim_dir ) { $index -= 1 }    # place after $shim_dir but before any other scoop dir
-            trace "index = $index"
+            # trace "index = $index"
             $new_paths = $paths[0..$index] + $dir
             if ($index -lt $paths.count) { $new_paths += $paths[$($index+1)..$paths.count] }
             $paths = $new_paths
@@ -440,7 +442,7 @@ function ensure_in_path($dir, $global) {
 function strip_path($orig_path, $dir) {
     $dir = normalize_path $dir
     $stripped = [string]::join(';', @( split_pathlist $orig_path | where-object { $_ -and $_ -ine $dir } ))
-    ($stripped -ine $orig_path), $stripped
+    ("$stripped" -ine "$orig_path"), $stripped
 }
 
 function remove_from_path($dir,$global) {
