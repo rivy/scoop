@@ -125,8 +125,8 @@ if (-not ($ep -imatch '^(bypass|unrestricted)$')) {
     set-executionpolicy unrestricted -scope currentuser
 }
 
-# download `curl` (bootstraps further downloads)
-$bin_dir = ensure "$dir\_bin"
+# download `curl` and `7z` (bootstraps further downloads)
+$bin_dir = ensure "$dir\vendor\curl"
 $dl_name = "vendor/curl/curl.exe"
 $url = "${repo_base_raw}/${dl_name}"
 $file = "${bin_dir}\curl.exe"
@@ -137,6 +137,18 @@ $url = "${repo_base_raw}/${dl_name}"
 $file = "${bin_dir}\ca-bundle.crt"
 write-output "[${dl_name}] from `"${url}`" ..."
 dl $url $file
+#
+$bin_dir = ensure "$dir\vendor\7z"
+$dl_name = "vendor/7z/7z.dll"
+$url = "${repo_base_raw}/${dl_name}"
+$file = "${bin_dir}\7z.dll"
+write-output "[${dl_name}] from `"${url}`" ..."
+dl $url $file
+$dl_name = "vendor/7z/7z.exe"
+$url = "${repo_base_raw}/${dl_name}"
+$file = "${bin_dir}\7z.exe"
+write-output "[${dl_name}] from `"${url}`" ..."
+dl $url $file
 
 # download `scoop` zip
 $zipurl = $repo_branch_zip
@@ -145,8 +157,9 @@ $allow_insecure = $true
 $cookies = $null
 write-output "[``scoop`` package] from `"${zipurl}`" ..."
 dl_progress $zipurl $zipfile $allow_insecure $cookies
+write-output "done"
 
-'extracting ``scoop`` package archive ...'
+write-output 'extracting ``scoop`` package archive ...'
 unzip $zipfile "$dir\_scoop_extract"
 copy-item "$dir\_scoop_extract\$repo_name-*\*" $dir -r -force
 remove-item "$dir\_scoop_extract" -r -force
