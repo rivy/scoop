@@ -1,11 +1,15 @@
-$fwdir = get-childitem C:\Windows\Microsoft.NET\Framework\ -dir | sort-object -desc | select-object -first 1
-
-push-location $($MyInvocation.MyCommand.Path | Split-Path)
+$myDirectory = Split-Path -Parent $MyInvocation.MyCommand.Path
 
 $source = "shim.cs"
 $target = "shim.exe"
 
+push-location $myDirectory
+$fwdir = get-childitem C:\Windows\Microsoft.NET\Framework\ -dir | sort-object -desc | select-object -first 1
 & "$($fwdir.fullname)\csc.exe" /nologo /out:"$target" "$source"
+pop-location
+
+$sourcePath = Convert-Path "$myDirectory\$source"
+$targetPath = Convert-Path "$myDirectory\$target"
 
 # replace the PE TimeDateStamp with the hash of the source file (for reproducibility)
 # ref: <https://learn.microsoft.com/en-us/windows/win32/debug/pe-format> @@ <https://archive.is/T7uwq>
@@ -14,48 +18,47 @@ $target = "shim.exe"
 # research: <https://stackoverflow.com/questions/5795270/keep-exe-timestamp-from-changing> @@ <https://archive.is/yYBeH>
 # research/tools: <https://github.com/Velocidex/go-pe> , <https://github.com/horsicq/XPEViewer>
 
-# Create a SHA256CryptoServiceProvider object
-$sha256 = New-Object System.Security.Cryptography.SHA256CryptoServiceProvider
-
-# Get the contents of the source file
-$sourceBytes = [System.IO.File]::ReadAllBytes($source)
-
-# Calculate the hash of the content
-$hash = $sha256.ComputeHash($sourceBytes)
-
-# Since SHA256 produces a 256-bit hash, we need to fold it to get a 32-bit hash
-$hash32 = 0
+# Create the source hash
+$sourceBytes = [IO.File]::ReadAllBytes($sourcePath)
+# * use SHA256; *very high* collision resistance
+$hasher = New-Object System.Security.Cryptography.SHA256CryptoServiceProvider
+$hash = $hasher.ComputeHash($sourceBytes)
+# * fold the SHA256 (256-bit) hash into a 32-bit hash using bitwise XOR; required for replacement of the COFF TimeDateStamp field
+$hash32bit = 0
 for ($i = 0; $i -lt $hash.Length; $i += 4) {
-    $hash32 = $hash32 -bxor [BitConverter]::ToInt32($hash, $i)
+    $hash32bit = $hash32bit -bxor [BitConverter]::ToInt32($hash, $i)
 }
-# Print the 32-bit hash
-# 'Folded (bit-XOR) 32-bit SHA256 hash: {0:X8}' -f $hash32
-$hashBytes = [BitConverter]::GetBytes($hash32)
-# 'Hash bytes: {0}' -f ($hashBytes -join ', ')
+$hashBytes = [BitConverter]::GetBytes($hash32bit)
+## 'Folded (bit-XOR) 32-bit SHA256 hash: {0:X8}' -f $hash32bit
+## 'Hash bytes: {0}' -f ($hashBytes -join ', ')
 
-# Read all bytes from the file
-$targetBytes = [System.IO.File]::ReadAllBytes($target)
-
-# Check the DOS header stub signature
-if ($targetBytes[0] -ne 0x4D -or $targetBytes[1] -ne 0x5A) {
-    throw "Not a valid PE file (missing DOS header)."
+# Read the target, verify the header, and replace the COFF TimeDateStamp field with the source hash
+$targetBytes = [IO.File]::ReadAllBytes($targetPath)
+#
+# * verify the DOS header stub signature ([0x5A,0x4D], "MZ"; from "Mark Zbikowski", one of the original architects of MS-DOS)
+$offsetToDOSBrand = 0x0;
+$DOSBrand = [Text.Encoding]::ASCII.GetBytes("MZ")
+$headerByteSlice = $targetBytes[$offsetToDOSBrand..($offsetToDOSBrand + $DOSBrand.Length - 1)]
+# '$DOSBrand: [ {0} ]' -f ($DOSBrand -join ', ')
+# '$headerByteSlice: [ {0} ]' -f ($headerByteSlice -join ', ')
+if ($(Compare-Object $headerByteSlice $DOSBrand).count -ne 0) {
+    "Not a valid PE file (missing DOS header stub signature)."
 }
-
-# Get the offset to the PE signature
-$offsetToPE = [BitConverter]::ToInt32($targetBytes, 0x3C)
-# Check the PE signature ("PE\0\0")
-if ($targetBytes[$offsetToPE] -ne 0x50 -or $targetBytes[$offsetToPE + 1] -ne 0x45 -or $targetBytes[$offsetToPE + 2] -ne 0x0 -or $targetBytes[$offsetToPE + 3] -ne 0x0) {
-    throw "Not a valid PE file (missing PE signature)."
+# * verify the PE header signature ([0x50,0x45,0x0,0x0], "PE\0\0"; "Portable Executable")
+$offsetToPEHeaderOffset = 0x3c;
+$offsetToPEBrand = [BitConverter]::ToInt32($targetBytes, $offsetToPEHeaderOffset)
+$PEBrand = [Text.Encoding]::ASCII.GetBytes("PE`0`0")
+$headerByteSlice = $targetBytes[$offsetToPEBrand..($offsetToPEBrand + $PEBrand.Length - 1)]
+# '$PEBrand: [ {0} ]' -f ($PEBrand -join ', ')
+# '$headerByteSlice: [ {0} ]' -f ($headerByteSlice -join ', ')
+if ($(Compare-Object $headerByteSlice $PEBrand).count -ne 0) {
+    throw "Not a valid PE file (missing DOS header stub signature)."
 }
-
-# Get the offset to the TimeDateStamp field
-$offsetToCOFF = $offsetToPE + 4
-$timeDateStampOffset = $offsetToCOFF + 4
-
-# Set the TimeDateStamp to the hash of the source file
-[System.Array]::Copy($hashBytes, 0, $targetBytes, $timeDateStampOffset, $hashBytes.Length)
+#
+$offsetToCOFF = $offsetToPEbrand + 4
+$offsetToTimeDateStamp = $offsetToCOFF + 4
+# * set the TimeDateStamp to the hash of the source file
+[Array]::Copy($hashBytes, 0, $targetBytes, $offsetToTimeDateStamp, $hashBytes.Length)
 
 # Write the modified bytes back to the target
-[System.IO.File]::WriteAllBytes($target, $targetBytes)
-
-pop-location
+[IO.File]::WriteAllBytes($targetPath, $targetBytes)
