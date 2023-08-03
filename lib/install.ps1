@@ -189,7 +189,17 @@ function dl_progress($url, $to, $allow_insecure, $cookies) {
     }
 
     # abort on any errors
-    if (($err_code -ne 0) -or ($null -ne $err_text)) { write-host ""; abort "[$err_code]: '$err_text'" };
+    # ToDO: suggest using `-k/--insecure` for curl failures due to SSL verification errors
+    #   ... [DONE] eg, 60 => `curl: (60) SSL peer certificate or SSH remote key was not OK`
+    #   ... check for others...
+    #   ... [DONE] revise $err_text to include a `try 'scoop install -k ...'` suggestion
+    if ($err_code -eq 60) {
+        # `curl: (60) SSL peer certificate or SSH remote key was not OK`
+        $err_text = "SSL certificate/key verification failed"
+        if (($null -ne $err_text) -and ('' -ne $err_text)) { $err_text = "$err_text; " }
+        $err_text += "try ``scoop install --insecure $app``"
+    };
+    if (($err_code -ne 0) -or ($null -ne $err_text)) { write-host ""; abort "[$err_code]: $err_text" };
 }
 
 function dl_urls($app, $version, $manifest, $architecture, $dir, $use_cache = $true, $check_hash = $true, $allow_insecure=$false) {
