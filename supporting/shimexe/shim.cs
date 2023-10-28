@@ -1,6 +1,7 @@
-// spell-checker:ignore (types) STARTUPINFO Unmanaged
+// spell-checker:ignore (names) Deno (types) STARTUPINFO Unmanaged
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -120,7 +121,7 @@ namespace shim
             var cmd_line = Environment.CommandLine;
             var cmd_args = add_args ?? "";
             var word_list = GetWords(cmd_line);
-            var argv0 = word_list.Count > 0 ? word_list[0].ToString() : null;
+            var arg0 = word_list.Count > 0 ? word_list[0].ToString() : null;
             var pass_args = word_list.Count > 1 ? cmd_line.Substring(word_list[1].Index) : null;
             if (!string.IsNullOrEmpty(pass_args))
             {
@@ -130,12 +131,30 @@ namespace shim
             if (!string.IsNullOrEmpty(cmd_args)) cmd_args = " " + cmd_args;
             var cmd = "\"" + path + "\"" + cmd_args;
 
-            // as a shim/pass-through, leave current SHIM info, if present, o/w place shim info in the environment
-            if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable("SHIM_TARGET")))
+            // act as an optional, generic shimmer with pass-thru:
+            // .. leave current SHIM info, if present and for SHIM_TARGETs != our direct target
+            // .. o/w place SHIM info in the environment
+            // * allows wrapper shell scripts to set up SHIM info for a secondary target (ie, useful for script runners, such as `deno`)
+            var shimTargetEmpty = string.IsNullOrEmpty(Environment.GetEnvironmentVariable("SHIM_TARGET"));
+            var shimTargetIsMine = Environment.GetEnvironmentVariable("SHIM_TARGET") == path;
+            if (shimTargetEmpty || shimTargetIsMine)
             {
+                // reset all SHIM info variables (except SHIM_EXEC and SHIM_PIPE)
+                // * SHIM_EXEC is a SHIM implementation detail (and may be removed in the future)
+                // * SHIM_PIPE is impossible to set up from an application; it must be done from a BAT/CMD script
+                foreach (DictionaryEntry envVar in Environment.GetEnvironmentVariables())
+                {
+                    string key = (string)envVar.Key;
+                    if (key.StartsWith("SHIM_"))
+                    {
+                        if (shimTargetIsMine || key == "SHIM_EXEC") continue;
+                        if (shimTargetIsMine || key == "SHIM_PIPE") continue;
+                        Environment.SetEnvironmentVariable(key, null);
+                    }
+                }
                 Environment.SetEnvironmentVariable("SHIM_TARGET", path);
-                if (!string.IsNullOrEmpty(argv0)) { Environment.SetEnvironmentVariable("SHIM_ARGV0", argv0.Trim()); }
-                if (!string.IsNullOrEmpty(pass_args)) { Environment.SetEnvironmentVariable("SHIM_ARGS", pass_args.Trim()); }
+                Environment.SetEnvironmentVariable("SHIM_ARG0", !(string.IsNullOrEmpty(arg0)) ? arg0.Trim() : null);
+                Environment.SetEnvironmentVariable("SHIM_ARGS", !(string.IsNullOrEmpty(pass_args)) ? pass_args.Trim() : null);
             }
 
             // setup "ignore" response for Ctrl-C and other signals (to allow unalloyed handling by shim target)
