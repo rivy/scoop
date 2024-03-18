@@ -121,11 +121,11 @@ function dl_with_cache($app, $version, $url, $to, $cookies, $use_cache = $true, 
 
     if(!(test-path $cached) -or !$use_cache) {
         $null = ensure $(cachedir)
-        write-host "downloading $url..." -nonewline
+        write-host "downloading '$url'..." -nonewline
         dl_progress $url "$cached.download" $allow_insecure $cookies
         move-item "$cached.download" $cached -force
         write-host "done"
-    } else { write-host "loading $url from cache..."}
+    } else { write-host "loading '$url' from cache..."}
     copy-item $cached $to
 }
 
