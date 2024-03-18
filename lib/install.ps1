@@ -130,9 +130,11 @@ function dl_with_cache($app, $version, $url, $to, $cookies, $use_cache = $true, 
 }
 
 function dl_progress($url, $to, $allow_insecure, $cookies) {
-    $uri = [system.uri]$url
+    # normalize url for `curl`
+    $uri = [System.URI]$url
+    $from = [System.URI]::EscapeUriString($uri)
 
-    $curl_options = @( "`"$uri`"" )
+    $curl_options = @( "`"$from`"" )
     ## -f : fail silently (no output at all) on HTTP errors [HTTP error code => $LASTEXITCODE]
     ## -L : follow redirects
     $curl_options += @( "-f", "-L" )
