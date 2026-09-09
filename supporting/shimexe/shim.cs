@@ -1,4 +1,6 @@
-// spell-checker:ignore (names) Deno (types) STARTUPINFO Unmanaged
+// spell-checker:ignore (names) Deno (people) Roy Ivy III * rivy (types) STARTUPINFO Unmanaged (vars) passthru
+
+// NOTE: C#v5 code restricted (for no-dependency builds on Win10/Win11)
 
 using System;
 using System.Collections;
@@ -97,7 +99,7 @@ namespace shim
             }
         }
 
-        static int Main(string[] args)
+        static int Main(/* string[] args */)
         {
             var exe = Assembly.GetExecutingAssembly().Location;
             var dir = Path.GetDirectoryName(exe);
@@ -111,37 +113,40 @@ namespace shim
             }
 
             var config = Config(configPath);
-            var path = Path.Combine(dir, Get(config, "path"));
-            var add_args = Get(config, "args");
+            var pathOfTarget = Path.Combine(dir, Get(config, "path")).Trim();
+            var additionalTargetArgs = Get(config, "args");
 
             var si = new STARTUPINFO();
             var pi = new PROCESS_INFORMATION();
 
             // create command line for shim target
-            var cmd_line = Environment.CommandLine;
-            var cmd_args = add_args ?? "";
-            var word_list = GetWords(cmd_line);
-            var arg0 = word_list.Count > 0 ? word_list[0].ToString() : null;
-            var pass_args = word_list.Count > 1 ? cmd_line.Substring(word_list[1].Index) : null;
-            if (!string.IsNullOrEmpty(pass_args))
-            {
-                if (!string.IsNullOrEmpty(cmd_args)) cmd_args += " ";
-                cmd_args += pass_args;
-            }
-            if (!string.IsNullOrEmpty(cmd_args)) cmd_args = " " + cmd_args;
-            var cmd = "\"" + path + "\"" + cmd_args;
+            var commandLine = Environment.CommandLine;
+            var targetArgs = additionalTargetArgs ?? ""; // prefix position
+            var commandWords = GetWords(commandLine);
+            var arg0 = commandWords.Count > 0 ? commandWords[0].ToString().Trim() : null;
+            var commandPassthruArgs = commandWords.Count > 1 ? commandLine.Substring(commandWords[1].Index) : null;
 
             // act as an optional, generic shimmer with pass-thru:
             // .. leave current SHIM info, if present and for SHIM_TARGETs != our direct target
             // .. o/w place SHIM info in the environment
             // * allows wrapper shell scripts to set up SHIM info for a secondary target (ie, useful for script runners, such as `deno`)
-            var shimTargetEmpty = string.IsNullOrEmpty(Environment.GetEnvironmentVariable("SHIM_TARGET"));
-            var shimTargetIsMine = Environment.GetEnvironmentVariable("SHIM_TARGET") == path;
-            if (shimTargetEmpty || shimTargetIsMine)
+            var envShimTarget = Environment.GetEnvironmentVariable("SHIM_TARGET");
+            var envShimARG0 = Environment.GetEnvironmentVariable("SHIM_ARG0");
+            var envShimARGS = Environment.GetEnvironmentVariable("SHIM_ARGS");
+            var shimTarget = envShimTarget != null ? envShimTarget.Trim() : null;
+            var shimTargetIsEmpty = string.IsNullOrEmpty(shimTarget);
+            var shimTargetIsMe = shimTarget == arg0;
+            var shimTargetIsMine = shimTarget == pathOfTarget;
+            var passthruArgs = shimTargetIsMe ? envShimARGS : commandPassthruArgs;
+            if (shimTargetIsEmpty || shimTargetIsMe || shimTargetIsMine)
             {
-                // reset all SHIM info variables (except SHIM_EXEC and SHIM_PIPE)
+                // reset SHIM info variables
+                // ... except ...
                 // * SHIM_EXEC is a SHIM implementation detail (and may be removed in the future)
                 // * SHIM_PIPE is impossible to set up from an application; it must be done from a BAT/CMD script
+                // * SHIM_ARG0 is a pass-through for `shimTargetIsMe == true`
+                // * SHIM_ARGS is a pass-through for `shimTargetIsMe == true`
+                // * SHIM_ARGS is a pass-through for `shimTargetIsMine == true` (ToDO: any need for 'additive passthru' of `additionalTargetArgs`?
                 foreach (DictionaryEntry envVar in Environment.GetEnvironmentVariables())
                 {
                     string key = (string)envVar.Key;
@@ -152,10 +157,22 @@ namespace shim
                         Environment.SetEnvironmentVariable(key, null);
                     }
                 }
-                Environment.SetEnvironmentVariable("SHIM_TARGET", path);
-                Environment.SetEnvironmentVariable("SHIM_ARG0", !(string.IsNullOrEmpty(arg0)) ? arg0.Trim() : null);
-                Environment.SetEnvironmentVariable("SHIM_ARGS", !(string.IsNullOrEmpty(pass_args)) ? pass_args.Trim() : null);
+                Environment.SetEnvironmentVariable("SHIM_TARGET", pathOfTarget);
+                if (shimTargetIsMe) {
+                    Environment.SetEnvironmentVariable("SHIM_ARG0", !(string.IsNullOrEmpty(envShimARG0)) ? envShimARG0 : null);
+                } else {
+                    Environment.SetEnvironmentVariable("SHIM_ARG0", !(string.IsNullOrEmpty(arg0)) ? arg0 : null);
+                }
+                Environment.SetEnvironmentVariable("SHIM_ARGS", !(string.IsNullOrEmpty(passthruArgs)) ? passthruArgs : null);
             }
+
+            if (!string.IsNullOrEmpty(passthruArgs))
+            {
+                if (!string.IsNullOrEmpty(targetArgs)) targetArgs += " ";
+                targetArgs += passthruArgs;
+            }
+            if (!string.IsNullOrEmpty(targetArgs)) targetArgs = " " + targetArgs;
+            var cmd = "\"" + pathOfTarget + "\"" + targetArgs;
 
             // setup "ignore" response for Ctrl-C and other signals (to allow unalloyed handling by shim target)
             // ref: [Console Control Handlers](https://docs.microsoft.com/en-us/windows/console/console-control-handlers)
@@ -192,6 +209,7 @@ namespace shim
         }
 
         // match words (tokens, separated by whitespace, which may have double-quoted internal whitespace)
+        // ToDO: [2026-09-08; rivy] handle word splitting more robustly (see `dxx.xProcess.wordSplitCLText()`)
         static MatchCollection GetWords(string cmdLine)
         {
             const char DQ = '"';
@@ -203,7 +221,7 @@ namespace shim
 
         static string Get(Dictionary<string, string> dic, string key)
         {
-            string value = null;
+            string value;
             dic.TryGetValue(key, out value);
             return value;
         }
