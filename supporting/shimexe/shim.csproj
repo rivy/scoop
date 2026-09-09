@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- spell-checker:ignore windir -->
+  <!--
+    This project file is for editor/IDE tooling only (IntelliSense, live diagnostics).
+    It is NOT used for the actual build — `build.ps1` compiles `shim.cs` directly with
+    the legacy in-box `csc.exe` (%windir%\Microsoft.NET\Framework\v4.0.30319\csc.exe),
+    which only supports language features up to C# 5. `LangVersion` below mirrors that
+    constraint so the C# extension flags newer syntax (e.g. `?.`, string interpolation)
+    as errors before they reach that compiler.
+    The `build.ps1` process is used to avoid requiring any extra dependencies when
+    building on Win10 or Win11 hosts (ie, basic Win10 / Win11 already include all build
+    dependencies).
+  -->
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net48</TargetFramework>
+    <AssemblyName>shim</AssemblyName>
+    <LangVersion>5</LangVersion>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+  </PropertyGroup>
+
+</Project>
