@@ -14,7 +14,7 @@ using System.Text;
 [assembly: AssemblyVersion("1.0.0.0")]
 [assembly: AssemblyFileVersion("1.0.0.0")]
 
-namespace shim
+namespace shimgen
 {
 	// creates (or modifies, by re-running against the same --output) a shim executable;
 	// by default, writes a sidecar `name.shim` config file (matching Scoop's current shim.exe behavior);
@@ -33,6 +33,8 @@ namespace shim
 		const int RT_RCDATA = 10;
 		const string ShimConfigResourceName = "SHIM_CONFIG"; // must match `shim.cs`'s embedded resource name
 		const ushort LANG_NEUTRAL = 0;
+
+		const string TemplateResourceName = "shim.exe"; // must match the `csc /resource:` identifier in build.ps1
 
 		static int Main(string[] args)
 		{
@@ -73,20 +75,37 @@ namespace shim
 				return 1;
 			}
 
-			if (template == null)
+			byte[] templateBytes;
+			if (template != null)
 			{
-				var selfDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-				template = Path.Combine(selfDir, "shim.exe");
+				if (!File.Exists(template))
+				{
+					Console.Error.WriteLine("Couldn't find shim template at " + template);
+					return 1;
+				}
+				templateBytes = File.ReadAllBytes(template);
 			}
-			if (!File.Exists(template))
+			else
 			{
-				Console.Error.WriteLine("Couldn't find shim template at " + template);
-				return 1;
+				// normally embedded directly in this exe (via `csc /resource:shim.exe`), so no external
+				// shim.exe file is needed; fall back to a sibling shim.exe for dev-time flexibility
+				templateBytes = GetEmbeddedTemplateBytes();
+				if (templateBytes == null)
+				{
+					var selfDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+					var siblingTemplate = Path.Combine(selfDir, "shim.exe");
+					if (!File.Exists(siblingTemplate))
+					{
+						Console.Error.WriteLine("Couldn't find an embedded or sibling shim.exe template");
+						return 1;
+					}
+					templateBytes = File.ReadAllBytes(siblingTemplate);
+				}
 			}
 
-			// copy/overwrite the template shim exe to the output path (also covers "modify": re-running
+			// write/overwrite the template shim exe to the output path (also covers "modify": re-running
 			// shimgen against an existing --output replaces its binary and rewrites/re-embeds its config)
-			File.Copy(template, output, overwrite: true);
+			File.WriteAllBytes(output, templateBytes);
 
 			var configText = "path = " + path + "\r\n";
 			if (!string.IsNullOrEmpty(targetArgs))
@@ -107,6 +126,26 @@ namespace shim
 			}
 
 			return 0;
+		}
+
+		// reads the `shim.exe` template bytes embedded in this executable's own managed resources
+		// (via `csc /resource:shim.exe`, see build.ps1); returns null if not embedded
+		static byte[] GetEmbeddedTemplateBytes()
+		{
+			var asm = Assembly.GetExecutingAssembly();
+			using (var stream = asm.GetManifestResourceStream(TemplateResourceName))
+			{
+				if (stream == null) return null;
+				var bytes = new byte[stream.Length];
+				var offset = 0;
+				while (offset < bytes.Length)
+				{
+					var read = stream.Read(bytes, offset, bytes.Length - offset);
+					if (read <= 0) break;
+					offset += read;
+				}
+				return bytes;
+			}
 		}
 
 		static void EmbedConfig(string exePath, string configText)
