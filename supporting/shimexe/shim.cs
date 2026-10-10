@@ -1,4 +1,4 @@
-// spell-checker:ignore (names) Deno (people) Roy Ivy III * rivy (types) RCDATA STARTUPINFO Unmanaged VERSIONINFO (vars) passthru shimgen
+// spell-checker:ignore (names) Deno choco (people) Roy Ivy III * rivy (types) RCDATA STARTUPINFO Unmanaged VERSIONINFO (vars) passthru shimgen noop waitforexit usetargetworkingdirectory
 
 // NOTE: C#v5 code restricted (for no-dependency builds on Win10/Win11)
 
@@ -161,7 +161,53 @@ namespace shim
 			var targetArgs = additionalTargetArgs ?? ""; // prefix position
 			var commandWords = GetWords(commandLine);
 			var arg0 = commandWords.Count > 0 ? commandWords[0].ToString().Trim() : null;
+
+			// recognized shim-only flags (`choco`-shimgen-style); consumed here and stripped before
+			// building the target's command line -- ref: <https://github.com/chocolatey/shimgen> "Shim Arguments"
+			bool shimgenHelp = false, shimgenLog = false, shimgenWaitForExit = false, shimgenExit = false,
+				shimgenGui = false, shimgenUseTargetWorkingDirectory = false, shimgenNoop = false;
+
 			var commandPassthruArgs = commandWords.Count > 1 ? commandLine.Substring(commandWords[1].Index) : null;
+			if (commandPassthruArgs != null)
+			{
+				var baseIndex = commandWords[1].Index;
+				// walk in reverse so removing a span doesn't disturb the (still original-commandLine-relative)
+				// indices of the spans not yet processed
+				for (var i = commandWords.Count - 1; i >= 1; i--)
+				{
+					var isFlag = true;
+					switch (commandWords[i].Value.ToLowerInvariant())
+					{
+						case "--shimgen-help": shimgenHelp = true; break;
+						case "--shimgen-log": shimgenLog = true; break;
+						case "--shimgen-waitforexit": shimgenWaitForExit = true; break;
+						case "--shimgen-exit": shimgenExit = true; break;
+						case "--shimgen-gui": shimgenGui = true; break;
+						case "--shimgen-usetargetworkingdirectory": shimgenUseTargetWorkingDirectory = true; break;
+						case "--shimgen-noop": shimgenNoop = true; break;
+						default: isFlag = false; break;
+					}
+					if (isFlag)
+					{
+						commandPassthruArgs = commandPassthruArgs.Remove(commandWords[i].Index - baseIndex, commandWords[i].Length);
+					}
+				}
+				commandPassthruArgs = commandPassthruArgs.Trim();
+				if (commandPassthruArgs.Length == 0) commandPassthruArgs = null;
+			}
+
+			if (shimgenHelp)
+			{
+				Console.WriteLine("Shim Arguments:");
+				Console.WriteLine("  --shimgen-help                        show this help and exit without running the target");
+				Console.WriteLine("  --shimgen-log                         show shim diagnostic logging on the command line");
+				Console.WriteLine("  --shimgen-waitforexit                 explicitly wait for the target to exit");
+				Console.WriteLine("  --shimgen-exit                        explicitly exit immediately, without waiting for the target");
+				Console.WriteLine("  --shimgen-gui                         treat the target as a GUI app (exit immediately, unless overridden by --shimgen-waitforexit)");
+				Console.WriteLine("  --shimgen-usetargetworkingdirectory   run the target with its own directory as the working directory");
+				Console.WriteLine("  --shimgen-noop                        show what would be run, without actually running the target");
+				return 0;
+			}
 
 			// act as an optional, generic shimmer with pass-thru:
 			// .. leave current SHIM info, if present and for SHIM_TARGETs != our direct target
@@ -214,6 +260,28 @@ namespace shim
 			if (!string.IsNullOrEmpty(targetArgs)) targetArgs = " " + targetArgs;
 			var cmd = "\"" + pathOfTarget + "\"" + targetArgs;
 
+			// `--shimgen-usetargetworkingdirectory`: run with the target's own directory as the working directory
+			var targetWorkingDirectory = shimgenUseTargetWorkingDirectory ? Path.GetDirectoryName(pathOfTarget) : null;
+
+			// default: behave as a command-line program (wait for the target to exit);
+			// `--shimgen-gui`/`--shimgen-exit` request an immediate return; `--shimgen-waitforexit` always wins
+			var waitForExit = true;
+			if (shimgenGui) waitForExit = false;
+			if (shimgenExit) waitForExit = false;
+			if (shimgenWaitForExit) waitForExit = true;
+
+			if (shimgenLog || shimgenNoop)
+			{
+				Console.WriteLine("shim: target command    : " + cmd);
+				Console.WriteLine("shim: working directory  : " + (targetWorkingDirectory ?? "(inherited)"));
+				Console.WriteLine("shim: wait for exit      : " + waitForExit);
+			}
+
+			if (shimgenNoop)
+			{
+				return 0;
+			}
+
 			// setup "ignore" response for Ctrl-C and other signals (to allow unalloyed handling by shim target)
 			// ref: [Console Control Handlers](https://docs.microsoft.com/en-us/windows/console/console-control-handlers)
 			// ref: [CTRL-C and CTRL-BREAK Signals](https://docs.microsoft.com/en-us/windows/console/ctrl-c-and-ctrl-break-signals)
@@ -229,7 +297,7 @@ namespace shim
 					bInheritHandles: true,
 					dwCreationFlags: 0,
 					lpEnvironment: IntPtr.Zero, // inherit parent
-					lpCurrentDirectory: null, // inherit parent
+					lpCurrentDirectory: targetWorkingDirectory, // null => inherit parent; o/w target's own directory
 					lpStartupInfo: ref si,
 					lpProcessInformation: out pi))
 			{
@@ -237,8 +305,11 @@ namespace shim
 			}
 			else
 			{
-				WaitForSingleObject(pi.hProcess, INFINITE);
-				GetExitCodeProcess(pi.hProcess, out exit_code);
+				if (waitForExit)
+				{
+					WaitForSingleObject(pi.hProcess, INFINITE);
+					GetExitCodeProcess(pi.hProcess, out exit_code);
+				}
 
 				// Close process and thread handles.
 				CloseHandle(pi.hProcess);

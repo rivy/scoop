@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-  <!-- spell-checker:ignore windir -->
+  <!-- spell-checker:ignore shimgen windir -->
   <!--
     This project file is for editor/IDE tooling only (IntelliSense, live diagnostics).
     It is NOT used for the actual build — `build.ps1` compiles `shim.cs` directly with
