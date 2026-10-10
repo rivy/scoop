@@ -4,3 +4,7 @@ scoop.sublime-workspace
 test/installer/tmp/*
 test/tmp/*
 *~
+
+# MSBuild/OmniSharp design-time build output (from the editor-tooling *.csproj files)
+supporting/shimexe/obj/
+supporting/shimexe/bin/
