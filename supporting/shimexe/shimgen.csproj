@@ -1,0 +1,30 @@
+<!-- spell-checker:ignore shimgen -->
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    This project file is for editor/IDE tooling only (IntelliSense, live diagnostics).
+    It is NOT used for the actual build — `build.ps1` compiles `shimgen.cs` directly with
+    the legacy in-box `csc.exe` (%windir%\Microsoft.NET\Framework\v4.0.30319\csc.exe),
+    which only supports language features up to C# 5. `LangVersion` below mirrors that
+    constraint so the C# extension flags newer syntax (e.g. `?.`, string interpolation)
+    as errors before they reach that compiler.
+  -->
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net48</TargetFramework>
+    <AssemblyName>shimgen</AssemblyName>
+    <LangVersion>5</LangVersion>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <!-- shimgen.cs declares its own [assembly: ...] attributes; don't let the SDK generate duplicates -->
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <!-- this folder also holds shim.cs (its own shim.csproj); don't let the SDK glob it in here too -->
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="shimgen.cs" />
+  </ItemGroup>
+
+</Project>

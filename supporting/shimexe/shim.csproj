@@ -20,6 +20,14 @@
     <LangVersion>5</LangVersion>
     <Nullable>disable</Nullable>
     <ImplicitUsings>disable</ImplicitUsings>
+    <!-- shim.cs declares its own [assembly: ...] attributes; don't let the SDK generate duplicates -->
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <!-- this folder also holds shimgen.cs (its own shimgen.csproj); don't let the SDK glob it in here too -->
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="shim.cs" />
+  </ItemGroup>
 
 </Project>

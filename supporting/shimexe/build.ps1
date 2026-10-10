@@ -2,4 +2,5 @@ $fwdir = get-childitem C:\Windows\Microsoft.NET\Framework\ -dir | sort-object -d
 
 push-location $($MyInvocation.MyCommand.Path | Split-Path)
 & "$($fwdir.fullname)\csc.exe" /nologo shim.cs
+& "$($fwdir.fullname)\csc.exe" /nologo shimgen.cs
 pop-location
