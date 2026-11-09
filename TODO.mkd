@@ -1,0 +1,79 @@
+# TODO: Backfill Scoop Download Cache
+
+Create a tool that processes every JSON installer manifest in the `rivy/bucket` Scoop bucket and populates the download cache using Scoop's current checksum-based cache naming convention.
+
+The bucket URL will be supplied later.
+
+## Workflow
+
+- Recursively read all JSON manifests in the selected bucket.
+- Resolve every download URL, including:
+  - top-level `url` values;
+  - architecture-specific URLs;
+  - manifests containing multiple URLs.
+- For each URL, calculate the current cache filename:
+
+  ```text
+  <app>#<version>#<first-7-of-SHA256(UTF8 URL)><URL extension>
+  ```
+
+- If the current cache file already exists, verify it and skip downloading it.
+- Otherwise, try to download the artifact to the current cache filename.
+- If the artifact is no longer available online, calculate its legacy URL component using:
+
+  ```powershell
+  $url -replace '[^\w\.\-]+', '_'
+  ```
+
+- Look for the corresponding legacy cache file:
+
+  ```text
+  <app>#<version>#<legacy-normalized-URL>
+  ```
+
+- If found, copy the legacy file to the current checksum-based cache filename.
+
+## Validation and Safety
+
+- Verify downloaded and copied files against the manifest hash when one is available.
+- Support manifest hashes using MD5, SHA-1, SHA-256, and SHA-512; assume SHA-256 when the algorithm prefix is omitted.
+- Match legacy files using the complete normalized URL rather than only the remote filename.
+- Report ambiguous legacy matches instead of selecting a file silently.
+- Do not overwrite an existing destination unless its content has been verified.
+- Detect and report possible collisions involving the seven-character URL hash.
+- Preserve existing cache files if validation fails.
+- Download to a temporary filename and move it into place only after successful completion and validation.
+
+## Alternate or Backup Cache
+
+- Add an option that accepts a secondary cache directory.
+- Use the secondary directory as a fallback when an artifact is absent from the primary Scoop cache.
+- Allow verified artifacts to be copied into the secondary directory, creating a portable backup cache.
+- Store files in the secondary directory using the same Scoop cache naming convention so they can be restored or copied directly to a new host.
+- Verify an artifact against its manifest hash before copying it between cache directories when a manifest hash is available.
+- Never replace a valid backup artifact with an unverified or invalid file.
+- Report whether each artifact came from the primary cache, backup cache, legacy cache, or a new download.
+- Provide a mode that gathers all dependencies needed by the selected installed applications, making them available for an offline re-install on a new host.
+- Include dependency manifests and their architecture-specific artifacts when building the backup cache.
+
+## Reporting
+
+Produce a summary with separate results for:
+
+- downloaded files;
+- files already cached;
+- files found in or copied to the alternate cache;
+- files migrated from legacy names;
+- URLs missing online with no matching legacy file;
+- manifest hash mismatches;
+- unsupported or dynamically generated URLs;
+- ambiguous legacy matches;
+- cache-name collisions.
+
+## Inputs
+
+- Path to a local checkout of `rivy/bucket`, containing the JSON manifests.
+- Source URL for `rivy/bucket` (to be added later).
+- Path to the existing Scoop download cache.
+- Optional path to an alternate or backup cache.
+- Optional list of installed or selected applications whose complete dependency sets should be backed up.
